@@ -237,13 +237,10 @@ void InitEnvironment()
 	glPointSize(3);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-//	glViewport(0, 0, InitialWidth, InitialHeight);
-//	gluOrtho2D(0, InitialWidth, 0, InitialHeight);
 
 	glViewport(0, 0, glutGet(GLUT_SCREEN_WIDTH) * 2, glutGet(GLUT_SCREEN_HEIGHT) * 2);
 	gluOrtho2D(0, glutGet(GLUT_SCREEN_WIDTH) * 2, 0, glutGet(GLUT_SCREEN_HEIGHT) * 2);
 
-//	gluPerspective(45, 1.0 * WIDTH / HEIGHT, 1, 100);
 	glMatrixMode(GL_MODELVIEW);
 }
 
@@ -599,7 +596,7 @@ int main(int argc, char **argv) {
 	glutInitDisplayMode(GLUT_RGB | GLUT_SINGLE);
 	glutInitWindowPosition(100, 100);
 	glutInitWindowSize(InitialWidth, InitialHeight);
-	glutCreateWindow("Lighthouse3D - GLUT Tutorial");
+	glutCreateWindow("Computer Graphics Lab");
 
 	InitEnvironment();
 
