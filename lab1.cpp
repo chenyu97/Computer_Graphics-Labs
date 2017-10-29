@@ -19,13 +19,14 @@ using namespace std;
 #define POLYGON_STATE2 302
 #define POLYGON_STATE3 303
 #define POLYGON_STATE4 304
-
+#define POLYGON_STATE5 305
 
 int system_state = 0;
 float CurrentWidth = InitialWidth;
 float CurrentHeight = InitialHeight;
 int left_button_down = 0;
 int left_button_up = 0;
+int edit_polygon_point = -1;
 
 struct Line
 {
@@ -411,6 +412,8 @@ void mouseButton(int button, int state, int x, int y)
 					cout << "qq" << endl;
 					system_state = POLYGON_STATE4;
 					left_button_up = 0;
+					polygons[polygons.size() - 1][polygons[polygons.size() - 1].size() - 1].x_2 = polygons[polygons.size() - 1][0].x_1;
+					polygons[polygons.size() - 1][polygons[polygons.size() - 1].size() - 1].y_2 = polygons[polygons.size() - 1][0].y_1;
 				}
 				else
 				{
@@ -437,7 +440,53 @@ void mouseButton(int button, int state, int x, int y)
 			if (state == GLUT_UP)
 			{
 				//start to edit
-				system_state = POLYGON_STATE1;
+				system_state = POLYGON_STATE5;
+			}
+		}
+		break;
+	case POLYGON_STATE5: //edit polygon state
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{
+				left_button_down = 0;
+			}
+			else if (state == GLUT_DOWN)
+			{
+				int i = 0;
+				for (; i < polygons[polygons.size() - 1].size(); i++)
+				{
+					if ((abs(x - polygons[polygons.size() - 1][i].x_1) < 10) && (abs(CurrentHeight - y - polygons[polygons.size() - 1][i].y_1) < 10))
+						break;
+				}
+				if (i < polygons[polygons.size() - 1].size())
+				{
+
+					cout << "asd" << endl;
+					left_button_down = 1;
+
+					//(i - 1)th and ith edge need to be edited;
+					edit_polygon_point = i;
+					system_state = POLYGON_STATE5;
+				}
+				else
+				{
+					system_state = POLYGON_STATE2;
+					left_button_down = 1;
+
+					vector<Line> newPolygon;
+
+					Line newLine;
+					newLine.x_1 = x;
+					newLine.y_1 = CurrentHeight - y;
+					newLine.x_2 = x;
+					newLine.y_2 = CurrentHeight - y;
+
+					newPolygon.push_back(newLine);
+					polygons.push_back(newPolygon);
+
+					glutPostRedisplay();
+				}
 			}
 		}
 		break;
@@ -461,6 +510,24 @@ void myMotion(int x, int y)
 		{
 			polygons[polygons.size() - 1][polygons[polygons.size() - 1].size() - 1].x_2 = x;
 			polygons[polygons.size() - 1][polygons[polygons.size() - 1].size() - 1].y_2 = CurrentHeight - y;
+		}
+	}
+	else if (system_state == POLYGON_STATE5)
+	{
+		if (left_button_down == 1)
+		{
+			if (edit_polygon_point == 0)
+			{
+				polygons[polygons.size() - 1][polygons[polygons.size() - 1].size() - 1].x_2 = x;
+				polygons[polygons.size() - 1][polygons[polygons.size() - 1].size() - 1].y_2 = CurrentHeight - y;
+			}
+			else
+			{
+				polygons[polygons.size() - 1][edit_polygon_point - 1].x_2 = x;
+				polygons[polygons.size() - 1][edit_polygon_point - 1].y_2 = CurrentHeight - y;
+			}
+			polygons[polygons.size() - 1][edit_polygon_point].x_1 = x;
+			polygons[polygons.size() - 1][edit_polygon_point].y_1 = CurrentHeight - y;
 		}
 	}
 	glutPostRedisplay();
