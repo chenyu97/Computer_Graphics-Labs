@@ -8,7 +8,13 @@ using namespace std;
 #define InitialHeight 320
 #define LINE 1
 #define LINE_STATE1 101
-#define LINE_MAX_NUM 10
+#define LINE_STATE2 102
+#define LINE_STATE3 103
+#define CIRCLE 2
+#define CIRCLE_STATE1 201
+#define CIRCLE_STATE2 202
+#define CIRCLE_STATE3 203
+
 int system_state = 0;
 float CurrentWidth = InitialWidth;
 float CurrentHeight = InitialHeight;
@@ -274,6 +280,7 @@ void mouseButton(int button, int state, int x, int y)
 			if (state == GLUT_DOWN)
 			{
 				left_button_down = 1;
+				system_state = LINE_STATE2;
 
 				Line newLine;
 				newLine.x_1 = x;
@@ -284,9 +291,56 @@ void mouseButton(int button, int state, int x, int y)
 
 				glutPostRedisplay();
 			}
-			else
+			else if (state == GLUT_UP)
 			{
 				left_button_down = 0;
+			}
+		}
+		break;
+	case LINE_STATE2:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{
+
+				left_button_down = 0;
+				system_state = LINE_STATE3;
+			}
+		}
+		break;
+	case LINE_STATE3:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_DOWN)
+			{
+				if ((abs(x - lines[lines.size() - 1].x_1) < 10) && (abs(CurrentHeight - y - lines[lines.size() - 1].y_1) < 10))
+				{
+					lines[lines.size() - 1].x_1 = lines[lines.size() - 1].x_2;
+					lines[lines.size() - 1].y_1 = lines[lines.size() - 1].y_2;
+					left_button_down = 1;
+
+					system_state = LINE_STATE2;
+				}
+				else if ((abs(x - lines[lines.size() - 1].x_2) < 10) && (abs(CurrentHeight - y - lines[lines.size() - 1].y_2) < 10))
+				{
+					left_button_down = 1;
+
+					system_state = LINE_STATE2;
+				}
+				else
+				{
+					left_button_down = 1;
+					system_state = LINE_STATE2;
+
+					Line newLine;
+					newLine.x_1 = x;
+					newLine.y_1 = CurrentHeight - y;
+					newLine.x_2 = x;
+					newLine.y_2 = CurrentHeight - y;
+					lines.push_back(newLine);
+
+					glutPostRedisplay();
+				}
 			}
 		}
 		break;
@@ -300,11 +354,9 @@ void myMotion(int x, int y)
 	{
 		lines[lines.size() - 1].x_2 = x;
 		lines[lines.size() - 1].y_2 = CurrentHeight - y;
-
 	}
 	
 	glutPostRedisplay();
-
 }
 
 void mainMenuProc(int option) {
@@ -314,6 +366,9 @@ void mainMenuProc(int option) {
 	case LINE: 
 		system_state = LINE_STATE1;
 		break;
+	case CIRCLE:
+		system_state = CIRCLE_STATE1;
+		break;
 	default: break;
 	}
 }
@@ -322,8 +377,8 @@ void createPopupMenus() {
 
 	int mainMenu = glutCreateMenu(mainMenuProc);
 
-	glutAddMenuEntry("Draw a line", LINE);
-//	glutAddMenuEntry("NORMAL", NORMAL);
+	glutAddMenuEntry("Draw lines", LINE);
+	glutAddMenuEntry("Draw circles", CIRCLE);
 
 	//fillMenu = glutCreateMenu(processFillMenu);
 
