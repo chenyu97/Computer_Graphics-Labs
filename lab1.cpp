@@ -14,11 +14,18 @@ using namespace std;
 #define CIRCLE_STATE1 201
 #define CIRCLE_STATE2 202
 #define CIRCLE_STATE3 203
+#define POLYGON 3
+#define POLYGON_STATE1 301
+#define POLYGON_STATE2 302
+#define POLYGON_STATE3 303
+#define POLYGON_STATE4 304
+
 
 int system_state = 0;
 float CurrentWidth = InitialWidth;
 float CurrentHeight = InitialHeight;
 int left_button_down = 0;
+int left_button_up = 0;
 
 struct Line
 {
@@ -28,6 +35,8 @@ struct Line
 	int y_2;
 };
 vector<Line> lines;
+
+vector<vector<Line>> polygons;
 
 void drawLines(int x_1, int y_1, int x_2, int y_2)
 {
@@ -266,6 +275,13 @@ void renderScene(void) {
 		cout << '(' << lines[i].x_1 << ',' << lines[i].y_1 << ") ,(" << lines[i].x_2  << ',' << lines[i].y_2 << ')' << endl;
 		drawLines(lines[i].x_1, lines[i].y_1, lines[i].x_2, lines[i].y_2);
 	}
+	
+	for (int i = 0; i < polygons.size(); i++)
+	{
+		for (int j = 0; j < polygons[i].size();j++)
+			drawLines(polygons[i][j].x_1, polygons[i][j].y_1, polygons[i][j].x_2, polygons[i][j].y_2);
+	}
+	
 
 	glFlush();
 }
@@ -279,6 +295,7 @@ void mouseButton(int button, int state, int x, int y)
 		{
 			if (state == GLUT_DOWN)
 			{
+				cout << "df" << endl;
 				left_button_down = 1;
 				system_state = LINE_STATE2;
 
@@ -344,18 +361,121 @@ void mouseButton(int button, int state, int x, int y)
 			}
 		}
 		break;
+
+	case POLYGON_STATE1:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_DOWN)
+			{
+				system_state = POLYGON_STATE2;
+				left_button_down = 1;
+				
+				vector<Line> newPolygon;
+				
+				Line newLine;
+				newLine.x_1 = x;
+				newLine.y_1 = CurrentHeight - y;
+				newLine.x_2 = x;
+				newLine.y_2 = CurrentHeight - y;
+
+				newPolygon.push_back(newLine);
+				polygons.push_back(newPolygon);
+			
+				glutPostRedisplay();
+
+			}
+		}
+		break;
+	case POLYGON_STATE2:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{
+				left_button_up = 1;
+				left_button_down = 0;
+//				glutPostRedisplay();
+				system_state = POLYGON_STATE3;
+			}
+		}
+		break;
+	case POLYGON_STATE3:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_DOWN)
+			{
+				cout << x << "," << CurrentHeight - y << endl;
+				cout << polygons[polygons.size() - 1][0].x_1 << "," << polygons[polygons.size() - 1][0].y_1 << endl;
+
+				if ((abs(x - polygons[polygons.size() - 1][0].x_1) < 5) && (abs(CurrentHeight - y - polygons[polygons.size() - 1][0].y_1) < 5))
+				{
+					cout << "qq" << endl;
+					system_state = POLYGON_STATE4;
+					left_button_up = 0;
+				}
+				else
+				{
+					system_state = POLYGON_STATE2;
+					left_button_down = 1;
+					left_button_up = 0;
+					Line newLine;
+
+					newLine.x_1 = polygons[polygons.size() - 1][polygons[polygons.size() - 1].size() - 1].x_2;
+					newLine.y_1 = polygons[polygons.size() - 1][polygons[polygons.size() - 1].size() - 1].y_2;
+					newLine.x_2 = polygons[polygons.size() - 1][polygons[polygons.size() - 1].size() - 1].x_2;
+					newLine.y_2 = polygons[polygons.size() - 1][polygons[polygons.size() - 1].size() - 1].y_2;
+
+					polygons[polygons.size() - 1].push_back(newLine);
+
+					glutPostRedisplay();
+				}
+			}
+		}
+		break;
+	case POLYGON_STATE4:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{
+				//start to edit
+				system_state = POLYGON_STATE1;
+			}
+		}
+		break;
 	default: break;
 	}
 }
 
 void myMotion(int x, int y)
 {
-	if (left_button_down == 1)
+	if ((system_state == LINE_STATE1) || (system_state == LINE_STATE2) || (system_state == LINE_STATE3))
 	{
-		lines[lines.size() - 1].x_2 = x;
-		lines[lines.size() - 1].y_2 = CurrentHeight - y;
+		if (left_button_down == 1)
+		{
+			lines[lines.size() - 1].x_2 = x;
+			lines[lines.size() - 1].y_2 = CurrentHeight - y;
+		}
 	}
-	
+	else if ((system_state == POLYGON_STATE1) || (system_state == POLYGON_STATE2) || (system_state == POLYGON_STATE3))
+	{
+		if (left_button_down == 1)
+		{
+			polygons[polygons.size() - 1][polygons[polygons.size() - 1].size() - 1].x_2 = x;
+			polygons[polygons.size() - 1][polygons[polygons.size() - 1].size() - 1].y_2 = CurrentHeight - y;
+		}
+	}
+	glutPostRedisplay();
+}
+
+void myPassiveMotion(int x, int y)
+{
+	if ((system_state == POLYGON_STATE2) || (system_state == POLYGON_STATE3))
+	{
+		if (left_button_up == 1)
+		{
+			polygons[polygons.size() - 1][polygons[polygons.size() - 1].size() - 1].x_2 = x;
+			polygons[polygons.size() - 1][polygons[polygons.size() - 1].size() - 1].y_2 = CurrentHeight - y;
+		}
+	}
 	glutPostRedisplay();
 }
 
@@ -369,6 +489,9 @@ void mainMenuProc(int option) {
 	case CIRCLE:
 		system_state = CIRCLE_STATE1;
 		break;
+	case POLYGON:
+		system_state = POLYGON_STATE1;
+		break;
 	default: break;
 	}
 }
@@ -379,6 +502,7 @@ void createPopupMenus() {
 
 	glutAddMenuEntry("Draw lines", LINE);
 	glutAddMenuEntry("Draw circles", CIRCLE);
+	glutAddMenuEntry("Draw polygons", POLYGON);
 
 	//fillMenu = glutCreateMenu(processFillMenu);
 
@@ -417,6 +541,7 @@ int main(int argc, char **argv) {
 	glutReshapeFunc(changeSize);
 	glutMouseFunc(mouseButton);
 	glutMotionFunc(myMotion);
+	glutPassiveMotionFunc(myPassiveMotion);
 
 	// init Menus
 	createPopupMenus();
@@ -426,3 +551,7 @@ int main(int argc, char **argv) {
 
 	return 0;
 }
+
+
+
+
