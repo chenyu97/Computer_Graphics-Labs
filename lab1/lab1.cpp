@@ -35,8 +35,8 @@ struct Line
 	int x_2;
 	int y_2;
 };
-vector<Line> lines;
 
+vector<Line> lines;
 vector<vector<Line>> polygons;
 
 void drawLines(int x_1, int y_1, int x_2, int y_2)
@@ -49,7 +49,7 @@ void drawLines(int x_1, int y_1, int x_2, int y_2)
 	dy = y_2 - y_1;
 
 	if (x_1 == x_2)
-	{
+	{	//one special case
 		int min = (y_1 <= y_2) ? y_1 : y_2;
 		int max = y_1 + y_2 - min;
 		for (int i = min; i <= max; i++)
@@ -58,7 +58,7 @@ void drawLines(int x_1, int y_1, int x_2, int y_2)
 		}
 	}
 	else if (y_1 == y_2)
-	{
+	{	//the other special case
 		int min = (x_1 <= x_2) ? x_1 : x_2;
 		int max = x_1 + x_2 - min;
 		for (int i = min; i <= max; i++)
@@ -67,9 +67,9 @@ void drawLines(int x_1, int y_1, int x_2, int y_2)
 		}
 	}
 	else if (abs(dx) >= abs(dy))
-	{
+	{	//abs(dx) >= abs(dy)
 		if ((dx > 0) == (dy > 0))
-		{
+		{	//k > 0
 			int x_max, y_max, x_min, y_min;
 			if (x_1 > x_2)
 			{
@@ -77,7 +77,6 @@ void drawLines(int x_1, int y_1, int x_2, int y_2)
 				y_max = y_1;
 				x_min = x_2;
 				y_min = y_2;
-//				cout << '(' << x_min << ',' << y_min << ") ,(" << x_max << ',' << y_max << ") = =" << endl;
 			}
 			else
 			{
@@ -106,7 +105,7 @@ void drawLines(int x_1, int y_1, int x_2, int y_2)
 			}
 		}
 		else
-		{
+		{	//k <0
 			int x_max, y_max, x_min, y_min;
 			if (x_1 > x_2)
 			{
@@ -114,9 +113,6 @@ void drawLines(int x_1, int y_1, int x_2, int y_2)
 				y_max = y_2;
 				x_min = x_2;
 				y_min = y_1;
-
-				cout << '(' << x_min << ',' << y_min << ") ,(" << x_max << ',' << y_max << ") = =" << endl;
-
 			}
 			else
 			{
@@ -146,7 +142,7 @@ void drawLines(int x_1, int y_1, int x_2, int y_2)
 		}
 	}
 	else if(abs(dx) < abs(dy))
-	{
+	{	//abs(dx) < abs(dy)
 		if ((dx > 0) == (dy > 0))
 		{
 			int x_max, y_max, x_min, y_min;
@@ -195,7 +191,6 @@ void drawLines(int x_1, int y_1, int x_2, int y_2)
 				y_max = y_2;
 				x_min = x_2;
 				y_min = y_1;
-//				cout << '(' << x_min << ',' << y_min << ") ,(" << x_max << ',' << y_max << ") = =" << endl;
 			}
 			else
 			{
@@ -225,7 +220,6 @@ void drawLines(int x_1, int y_1, int x_2, int y_2)
 		}
 	}
 	glEnd();
-
 	return;
 }
 
@@ -268,19 +262,20 @@ void renderScene(void) {
 	glClearColor(1, 1, 1, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	//draw lines
 	for (int i = 0; i < lines.size(); i++)
 	{
 		cout << '(' << lines[i].x_1 << ',' << lines[i].y_1 << ") ,(" << lines[i].x_2  << ',' << lines[i].y_2 << ')' << endl;
 		drawLines(lines[i].x_1, lines[i].y_1, lines[i].x_2, lines[i].y_2);
 	}
 	
+	//draw polygons
 	for (int i = 0; i < polygons.size(); i++)
 	{
 		for (int j = 0; j < polygons[i].size();j++)
 			drawLines(polygons[i][j].x_1, polygons[i][j].y_1, polygons[i][j].x_2, polygons[i][j].y_2);
 	}
 	
-
 	glFlush();
 }
 
@@ -292,8 +287,7 @@ void mouseButton(int button, int state, int x, int y)
 		if (button == GLUT_LEFT_BUTTON)
 		{
 			if (state == GLUT_DOWN)
-			{
-				cout << "df" << endl;
+			{	//start to draw a line
 				left_button_down = 1;
 				system_state = LINE_STATE2;
 
@@ -317,7 +311,6 @@ void mouseButton(int button, int state, int x, int y)
 		{
 			if (state == GLUT_UP)
 			{
-
 				left_button_down = 0;
 				system_state = LINE_STATE3;
 			}
@@ -329,21 +322,20 @@ void mouseButton(int button, int state, int x, int y)
 			if (state == GLUT_DOWN)
 			{
 				if ((abs(x - lines[lines.size() - 1].x_1) < 10) && (abs(CurrentHeight - y - lines[lines.size() - 1].y_1) < 10))
-				{
+				{	//start to edit the line
 					lines[lines.size() - 1].x_1 = lines[lines.size() - 1].x_2;
 					lines[lines.size() - 1].y_1 = lines[lines.size() - 1].y_2;
 					left_button_down = 1;
-
 					system_state = LINE_STATE2;
 				}
 				else if ((abs(x - lines[lines.size() - 1].x_2) < 10) && (abs(CurrentHeight - y - lines[lines.size() - 1].y_2) < 10))
-				{
+				{	//start to edit the line too
 					left_button_down = 1;
 
 					system_state = LINE_STATE2;
 				}
 				else
-				{
+				{	//start to draw the next line
 					left_button_down = 1;
 					system_state = LINE_STATE2;
 
@@ -359,12 +351,11 @@ void mouseButton(int button, int state, int x, int y)
 			}
 		}
 		break;
-
 	case POLYGON_STATE1:
 		if (button == GLUT_LEFT_BUTTON)
 		{
 			if (state == GLUT_DOWN)
-			{
+			{	//start to draw a polygon
 				system_state = POLYGON_STATE2;
 				left_button_down = 1;
 				
@@ -391,7 +382,6 @@ void mouseButton(int button, int state, int x, int y)
 			{
 				left_button_up = 1;
 				left_button_down = 0;
-//				glutPostRedisplay();
 				system_state = POLYGON_STATE3;
 			}
 		}
@@ -400,20 +390,16 @@ void mouseButton(int button, int state, int x, int y)
 		if (button == GLUT_LEFT_BUTTON)
 		{
 			if (state == GLUT_DOWN)
-			{
-				cout << x << "," << CurrentHeight - y << endl;
-				cout << polygons[polygons.size() - 1][0].x_1 << "," << polygons[polygons.size() - 1][0].y_1 << endl;
-
+			{	
 				if ((abs(x - polygons[polygons.size() - 1][0].x_1) < 5) && (abs(CurrentHeight - y - polygons[polygons.size() - 1][0].y_1) < 5))
-				{
-					cout << "qq" << endl;
+				{	//finish drawing the polygon
 					system_state = POLYGON_STATE4;
 					left_button_up = 0;
 					polygons[polygons.size() - 1][polygons[polygons.size() - 1].size() - 1].x_2 = polygons[polygons.size() - 1][0].x_1;
 					polygons[polygons.size() - 1][polygons[polygons.size() - 1].size() - 1].y_2 = polygons[polygons.size() - 1][0].y_1;
 				}
 				else
-				{
+				{	//start to draw the next edge of the polygon
 					system_state = POLYGON_STATE2;
 					left_button_down = 1;
 					left_button_up = 0;
@@ -435,13 +421,12 @@ void mouseButton(int button, int state, int x, int y)
 		if (button == GLUT_LEFT_BUTTON)
 		{
 			if (state == GLUT_UP)
-			{
-				//start to edit
+			{	//start to edit the polygon
 				system_state = POLYGON_STATE5;
 			}
 		}
 		break;
-	case POLYGON_STATE5: //edit polygon state
+	case POLYGON_STATE5: 
 		if (button == GLUT_LEFT_BUTTON)
 		{
 			if (state == GLUT_UP)
@@ -449,25 +434,22 @@ void mouseButton(int button, int state, int x, int y)
 				left_button_down = 0;
 			}
 			else if (state == GLUT_DOWN)
-			{
+			{	//to edit the polygon
 				int i = 0;
 				for (; i < polygons[polygons.size() - 1].size(); i++)
-				{
+				{	//judge whether one vertex of all need to drag
 					if ((abs(x - polygons[polygons.size() - 1][i].x_1) < 10) && (abs(CurrentHeight - y - polygons[polygons.size() - 1][i].y_1) < 10))
 						break;
 				}
 				if (i < polygons[polygons.size() - 1].size())
 				{
-
-					cout << "asd" << endl;
 					left_button_down = 1;
-
 					//(i - 1)th and ith edge need to be edited;
 					edit_polygon_point = i;
 					system_state = POLYGON_STATE5;
 				}
 				else
-				{
+				{	//start to draw the next polygon
 					system_state = POLYGON_STATE2;
 					left_button_down = 1;
 
@@ -494,7 +476,7 @@ void mouseButton(int button, int state, int x, int y)
 void myMotion(int x, int y)
 {
 	if ((system_state == LINE_STATE1) || (system_state == LINE_STATE2) || (system_state == LINE_STATE3))
-	{
+	{	//drag one end point of the line when drawing or editing the line
 		if (left_button_down == 1)
 		{
 			lines[lines.size() - 1].x_2 = x;
@@ -502,9 +484,9 @@ void myMotion(int x, int y)
 		}
 	}
 	else if ((system_state == POLYGON_STATE1) || (system_state == POLYGON_STATE2) || (system_state == POLYGON_STATE3))
-	{
+	{	
 		if (left_button_down == 1)
-		{
+		{	//drag one end point of the line when drawing the polygon
 			polygons[polygons.size() - 1][polygons[polygons.size() - 1].size() - 1].x_2 = x;
 			polygons[polygons.size() - 1][polygons[polygons.size() - 1].size() - 1].y_2 = CurrentHeight - y;
 		}
@@ -512,7 +494,7 @@ void myMotion(int x, int y)
 	else if (system_state == POLYGON_STATE5)
 	{
 		if (left_button_down == 1)
-		{
+		{	//drag one vertex of the polygon when editing the polygon
 			if (edit_polygon_point == 0)
 			{
 				polygons[polygons.size() - 1][polygons[polygons.size() - 1].size() - 1].x_2 = x;
@@ -533,7 +515,7 @@ void myMotion(int x, int y)
 void myPassiveMotion(int x, int y)
 {
 	if ((system_state == POLYGON_STATE2) || (system_state == POLYGON_STATE3))
-	{
+	{	//drag one end point of the line when drawing the polygon
 		if (left_button_up == 1)
 		{
 			polygons[polygons.size() - 1][polygons[polygons.size() - 1].size() - 1].x_2 = x;
@@ -544,9 +526,7 @@ void myPassiveMotion(int x, int y)
 }
 
 void mainMenuProc(int option) {
-
 	switch (option) {
-
 	case LINE: 
 		system_state = LINE_STATE1;
 		break;
@@ -568,25 +548,15 @@ void createPopupMenus() {
 	glutAddMenuEntry("Draw circles", CIRCLE);
 	glutAddMenuEntry("Draw polygons", POLYGON);
 
-	//fillMenu = glutCreateMenu(processFillMenu);
+	/*
+	fillMenu = glutCreateMenu(processFillMenu);
+	glutAddMenuEntry("Fill", FILL);
+	mainMenu = glutCreateMenu(processMainMenu);
+	glutAddSubMenu("Polygon Mode", fillMenu);
+	*/
 
-	//glutAddMenuEntry("Fill", FILL);
-	//glutAddMenuEntry("Line", LINE);
-
-	//colorMenu = glutCreateMenu(processColorMenu);
-	//glutAddMenuEntry("Red", RED);
-	//glutAddMenuEntry("Blue", BLUE);
-	//glutAddMenuEntry("Green", GREEN);
-	//glutAddMenuEntry("Orange", ORANGE);
-
-	//mainMenu = glutCreateMenu(processMainMenu);
-
-	//glutAddSubMenu("Polygon Mode", fillMenu);
-	//glutAddSubMenu("Color", colorMenu);
-	
 	// attach the menu to the right button
 	glutAttachMenu(GLUT_RIGHT_BUTTON);
-
 }
 
 int main(int argc, char **argv) {
@@ -615,7 +585,3 @@ int main(int argc, char **argv) {
 
 	return 0;
 }
-
-
-
-
