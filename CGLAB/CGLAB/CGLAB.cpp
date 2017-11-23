@@ -56,9 +56,17 @@ struct Ellipse
 	int y_half_length;
 };
 
+struct  Circle
+{
+	int x;
+	int y;
+	int r;
+};
+
 vector<Line> lines;
 vector<vector<Line>> polygons;
 vector<Ellipse> ellipses;
+vector<Circle> circles;
 
 Line circleBounds[4] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };  //to surround the current circle
 Line ellipseBounds[4] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };  //to surround the current ellipse
@@ -247,6 +255,42 @@ void drawLines(int x_1, int y_1, int x_2, int y_2)
 	return;
 }
 
+void drawCircles(Circle c)
+{
+	glColor3f(0, 0, 0);
+	glBegin(GL_POINTS);
+	//consider x = 0, y = 0; afterwards we move all the points
+	int p0 = 5 / 4 - c.r;
+	int x = 0;
+	int y = c.r;
+	int p = p0;
+	while (x <= y)
+	{
+		glVertex2i(x + c.x, y + c.y);
+		glVertex2i(y + c.x, x + c.y);
+		glVertex2i((-1) * x + c.x, (-1) * y + c.y);
+		glVertex2i((-1) * y + c.x, (-1) * x + c.y);
+		glVertex2i((-1) * x + c.x, y + c.y);
+		glVertex2i(y + c.x, (-1) * x + c.y);
+		glVertex2i(x + c.x, (-1) * y + c.y);
+		glVertex2i((-1) * y + c.x, x + c.y);
+		if (p < 0)
+		{
+			p = p + 2 * x + 3;
+			x = x + 1;
+			y = y;
+		}
+		else if (p >= 0)
+		{
+			p = p + 2 * x + 5 - 2 * y;
+			x = x + 1;
+			y = y - 1;
+		}
+	}
+	glEnd();
+	return;
+}
+
 void drawEllipse(Ellipse e)
 {
 	glColor3f(0, 0, 0);
@@ -373,6 +417,12 @@ void renderScene(void) {
 		{
 			drawLines(circleBounds[i].x_1, circleBounds[i].y_1, circleBounds[i].x_2, circleBounds[i].y_2);
 		}
+	}
+
+	//draw circles
+	for (int i = 0; i < circles.size(); i++)
+	{
+		drawCircles(circles[i]);
 	}
 
 	//draw ellipseBounds
@@ -705,6 +755,123 @@ void mouseButton(int button, int state, int x, int y)
 			}
 		}
 		break;
+	case CIRCLE_STATE1://circlebounds follow the order : left, down, right, up
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_DOWN)
+			{
+				left_button_down = 1;
+
+				circleBounds[0].x_1 = x;
+				circleBounds[0].y_1 = CurrentHeight - y;
+				circleBounds[0].x_2 = x;
+				circleBounds[0].y_2 = CurrentHeight - y;  //no use
+
+				circleBounds[1].x_1 = x;
+				circleBounds[1].y_1 = CurrentHeight - y;  //no use
+				circleBounds[1].x_2 = x;  //no use
+				circleBounds[1].y_2 = CurrentHeight - y;  //no use
+
+				circleBounds[2].x_1 = x;  //no use
+				circleBounds[2].y_1 = CurrentHeight - y;  //no use
+				circleBounds[2].x_2 = x;  //no use
+				circleBounds[2].y_2 = CurrentHeight - y;
+
+				circleBounds[3].x_1 = x;  //no use
+				circleBounds[3].y_1 = CurrentHeight - y;
+				circleBounds[3].x_2 = x;
+				circleBounds[3].y_2 = CurrentHeight - y;
+
+				Circle newCircle;
+				newCircle.x = (circleBounds[0].x_1 + circleBounds[2].x_1) / 2;
+				newCircle.y = (circleBounds[0].y_1 + circleBounds[2].y_1) / 2;
+				newCircle.r = ((abs(circleBounds[2].x_1 - circleBounds[0].x_1) / 2) > (abs(circleBounds[2].y_1 - circleBounds[0].y_1) / 2)) ? (abs(circleBounds[2].x_1 - circleBounds[0].x_1) / 2) : (abs(circleBounds[2].y_1 - circleBounds[0].y_1) / 2);
+				circles.push_back(newCircle);
+
+				isCircleEdit = 1;
+				system_state = CIRCLE_STATE2;
+
+				glutPostRedisplay();
+			}
+			else if (state == GLUT_UP)
+			{
+				left_button_down = 0;
+			}
+		}
+		break;
+	case CIRCLE_STATE2:  //ready to edit point 2	
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{
+				left_button_down = 0;
+				system_state = CIRCLE_STATE3;
+			}
+		}
+		break;
+	case CIRCLE_STATE3:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_DOWN)
+			{
+				if ((abs(x - circleBounds[2].x_1) < 10) && (abs(CurrentHeight - y - circleBounds[2].y_1) < 10))
+				{
+					left_button_down = 1;
+					system_state = CIRCLE_STATE2;
+				}
+				else if ((abs(x - circleBounds[0].x_1) < 10) && (abs(CurrentHeight - y - circleBounds[0].y_1) < 10))
+				{
+					left_button_down = 1;
+					system_state = CIRCLE_STATE4;
+				}
+				else if ((abs(x - circleBounds[1].x_1) < 10) && (abs(CurrentHeight - y - circleBounds[1].y_1) < 10))
+				{
+					left_button_down = 1;
+					system_state = CIRCLE_STATE5;
+				}
+				else if ((abs(x - circleBounds[3].x_1) < 10) && (abs(CurrentHeight - y - circleBounds[3].y_1) < 10))
+				{
+					left_button_down = 1;
+					system_state = CIRCLE_STATE6;
+				}
+				else
+				{
+					isCircleEdit = 0;
+					system_state = CIRCLE_STATE1;
+				}
+			}
+		}
+		break;
+	case CIRCLE_STATE4://ready to edit point 0
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{
+				left_button_down = 0;
+				system_state = CIRCLE_STATE3;
+			}
+		}
+		break;
+	case CIRCLE_STATE5: //ready to edit point 1
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{
+				left_button_down = 0;
+				system_state = CIRCLE_STATE3;
+			}
+		}
+		break;
+	case CIRCLE_STATE6: //ready to edit point 3
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{
+				left_button_down = 0;
+				system_state = CIRCLE_STATE3;
+			}
+		}
+		break;
 	default: break;
 	}
 }
@@ -863,6 +1030,130 @@ void myMotion(int x, int y)
 			ellipses[ellipses.size() - 1].y = (ellipseBounds[0].y_1 + ellipseBounds[2].y_1) / 2;
 			ellipses[ellipses.size() - 1].x_half_length = ((ellipseBounds[2].x_1 - ellipseBounds[0].x_1) > 0) ? ((ellipseBounds[2].x_1 - ellipseBounds[0].x_1) / 2) : ((ellipseBounds[0].x_1 - ellipseBounds[2].x_1) / 2);
 			ellipses[ellipses.size() - 1].y_half_length = ((ellipseBounds[2].y_1 - ellipseBounds[0].y_1) > 0) ? ((ellipseBounds[2].y_1 - ellipseBounds[0].y_1) / 2) : ((ellipseBounds[0].y_1 - ellipseBounds[2].y_1) / 2);
+		}
+	}
+	else if (system_state == CIRCLE_STATE2)
+	{
+		if (left_button_down == 1)
+		{
+			int max = (abs(x - circleBounds[0].x_1) > abs(CurrentHeight - y - circleBounds[0].y_1)) ? abs(x - circleBounds[0].x_1) : abs(CurrentHeight - y - circleBounds[0].y_1);
+
+			//circleBounds[0].x_1 = x;
+			//circleBounds[0].y_1 = CurrentHeight - y;
+			//circleBounds[0].x_2 = x;
+			circleBounds[0].y_2 = (CurrentHeight - y - circleBounds[0].y_1 > 0) ? (circleBounds[0].y_1 + max) : (circleBounds[0].y_1 - max); 
+
+			//circleBounds[1].x_1 = x;
+			circleBounds[1].y_1 = (CurrentHeight - y - circleBounds[0].y_1 > 0) ? (circleBounds[0].y_1 + max) : (circleBounds[0].y_1 - max); 
+			circleBounds[1].x_2 = (x - circleBounds[0].x_1 > 0) ? (circleBounds[0].x_1 + max) : (circleBounds[0].x_1 - max);
+			circleBounds[1].y_2 = (CurrentHeight - y - circleBounds[0].y_1 > 0) ? (circleBounds[0].y_1 + max) : (circleBounds[0].y_1 - max);
+
+			circleBounds[2].x_1 = (x - circleBounds[0].x_1 > 0) ? (circleBounds[0].x_1 + max) : (circleBounds[0].x_1 - max);
+			circleBounds[2].y_1 = (CurrentHeight - y - circleBounds[0].y_1 > 0) ? (circleBounds[0].y_1 + max) : (circleBounds[0].y_1 - max);
+			circleBounds[2].x_2 = (x - circleBounds[0].x_1 > 0) ? (circleBounds[0].x_1 + max) : (circleBounds[0].x_1 - max);
+			//circleBounds[2].y_2 = CurrentHeight - y;
+
+			circleBounds[3].x_1 = (x - circleBounds[0].x_1 > 0) ? (circleBounds[0].x_1 + max) : (circleBounds[0].x_1 - max);
+			//circleBounds[3].y_1 = CurrentHeight - y;
+			//circleBounds[3].x_2 = x;
+			//circleBounds[3].y_2 = CurrentHeight - y;
+
+			circles[circles.size() - 1].x = (circleBounds[0].x_1 + circleBounds[2].x_1) / 2;
+			circles[circles.size() - 1].y = (circleBounds[0].y_1 + circleBounds[2].y_1) / 2;
+			circles[circles.size() - 1].r = (abs(circleBounds[2].x_1 - circleBounds[0].x_1) / 2) > (abs(circleBounds[2].y_1 - circleBounds[0].y_1) / 2) ? (abs(circleBounds[2].x_1 - circleBounds[0].x_1) / 2) : (abs(circleBounds[2].y_1 - circleBounds[0].y_1) / 2);
+		}
+	}
+	else if (system_state == CIRCLE_STATE4)
+	{
+		if (left_button_down == 1)
+		{
+			int max = (abs(x - circleBounds[2].x_1) > abs(CurrentHeight - y - circleBounds[2].y_1)) ? abs(x - circleBounds[2].x_1) : abs(CurrentHeight - y - circleBounds[2].y_1);
+
+			circleBounds[0].x_1 = (x - circleBounds[2].x_1 > 0) ? (circleBounds[2].x_1 + max) : (circleBounds[2].x_1 - max);
+			circleBounds[0].y_1 = (CurrentHeight - y - circleBounds[2].y_1 > 0) ? (circleBounds[2].y_1 + max) : (circleBounds[2].y_1 - max);
+			circleBounds[0].x_2 = (x - circleBounds[2].x_1 > 0) ? (circleBounds[2].x_1 + max) : (circleBounds[2].x_1 - max);
+			//circleBounds[0].y_2 = (CurrentHeight - y - circleBounds[0].y_1 > 0) ? (circleBounds[0].y_1 + max) : (circleBounds[0].y_1 - max);
+
+			circleBounds[1].x_1 = (x - circleBounds[2].x_1 > 0) ? (circleBounds[2].x_1 + max) : (circleBounds[2].x_1 - max);
+			//circleBounds[1].y_1 = (CurrentHeight - y - circleBounds[0].y_1 > 0) ? (circleBounds[0].y_1 + max) : (circleBounds[0].y_1 - max);
+			//circleBounds[1].x_2 = (x - circleBounds[0].x_1 > 0) ? (circleBounds[0].x_1 + max) : (circleBounds[0].x_1 - max);
+			//circleBounds[1].y_2 = (CurrentHeight - y - circleBounds[0].y_1 > 0) ? (circleBounds[0].y_1 + max) : (circleBounds[0].y_1 - max);
+
+			//circleBounds[2].x_1 = (x - circleBounds[0].x_1 > 0) ? (circleBounds[0].x_1 + max) : (circleBounds[0].x_1 - max);
+			//circleBounds[2].y_1 = (CurrentHeight - y - circleBounds[0].y_1 > 0) ? (circleBounds[0].y_1 + max) : (circleBounds[0].y_1 - max);
+			//circleBounds[2].x_2 = (x - circleBounds[0].x_1 > 0) ? (circleBounds[0].x_1 + max) : (circleBounds[0].x_1 - max);
+			circleBounds[2].y_2 = (CurrentHeight - y - circleBounds[2].y_1 > 0) ? (circleBounds[2].y_1 + max) : (circleBounds[2].y_1 - max);
+
+			//circleBounds[3].x_1 = (x - circleBounds[2].x_1 > 0) ? (circleBounds[2].x_1 + max) : (circleBounds[2].x_1 - max);
+			circleBounds[3].y_1 = (CurrentHeight - y - circleBounds[2].y_1 > 0) ? (circleBounds[2].y_1 + max) : (circleBounds[2].y_1 - max);
+			circleBounds[3].x_2 = (x - circleBounds[2].x_1 > 0) ? (circleBounds[2].x_1 + max) : (circleBounds[2].x_1 - max);
+			circleBounds[3].y_2 = (CurrentHeight - y - circleBounds[2].y_1 > 0) ? (circleBounds[2].y_1 + max) : (circleBounds[2].y_1 - max);
+
+			circles[circles.size() - 1].x = (circleBounds[0].x_1 + circleBounds[2].x_1) / 2;
+			circles[circles.size() - 1].y = (circleBounds[0].y_1 + circleBounds[2].y_1) / 2;
+			circles[circles.size() - 1].r = (abs(circleBounds[2].x_1 - circleBounds[0].x_1) / 2) > (abs(circleBounds[2].y_1 - circleBounds[0].y_1) / 2) ? (abs(circleBounds[2].x_1 - circleBounds[0].x_1) / 2) : (abs(circleBounds[2].y_1 - circleBounds[0].y_1) / 2);
+		}
+	}
+	else if (system_state == CIRCLE_STATE5)
+	{
+		if (left_button_down == 1)
+		{
+			int max = (abs(x - circleBounds[3].x_1) > abs(CurrentHeight - y - circleBounds[3].y_1)) ? abs(x - circleBounds[3].x_1) : abs(CurrentHeight - y - circleBounds[3].y_1);
+
+			circleBounds[0].x_1 = (x - circleBounds[3].x_1 > 0) ? (circleBounds[3].x_1 + max) : (circleBounds[3].x_1 - max);
+			//circleBounds[0].y_1 = (CurrentHeight - y - circleBounds[2].y_1 > 0) ? (circleBounds[2].y_1 + max) : (circleBounds[2].y_1 - max);
+			circleBounds[0].x_2 = (x - circleBounds[3].x_1 > 0) ? (circleBounds[3].x_1 + max) : (circleBounds[3].x_1 - max);
+			circleBounds[0].y_2 = (CurrentHeight - y - circleBounds[3].y_1 > 0) ? (circleBounds[3].y_1 + max) : (circleBounds[3].y_1 - max);
+
+			circleBounds[1].x_1 = (x - circleBounds[3].x_1 > 0) ? (circleBounds[3].x_1 + max) : (circleBounds[3].x_1 - max);
+			circleBounds[1].y_1 = (CurrentHeight - y - circleBounds[3].y_1 > 0) ? (circleBounds[3].y_1 + max) : (circleBounds[3].y_1 - max);
+			//circleBounds[1].x_2 = (x - circleBounds[0].x_1 > 0) ? (circleBounds[0].x_1 + max) : (circleBounds[0].x_1 - max);
+			circleBounds[1].y_2 = (CurrentHeight - y - circleBounds[3].y_1 > 0) ? (circleBounds[3].y_1 + max) : (circleBounds[3].y_1 - max);
+
+			//circleBounds[2].x_1 = (x - circleBounds[0].x_1 > 0) ? (circleBounds[0].x_1 + max) : (circleBounds[0].x_1 - max);
+			circleBounds[2].y_1 = (CurrentHeight - y - circleBounds[3].y_1 > 0) ? (circleBounds[3].y_1 + max) : (circleBounds[3].y_1 - max);
+			//circleBounds[2].x_2 = (x - circleBounds[0].x_1 > 0) ? (circleBounds[0].x_1 + max) : (circleBounds[0].x_1 - max);
+			//circleBounds[2].y_2 = (CurrentHeight - y - circleBounds[2].y_1 > 0) ? (circleBounds[2].y_1 + max) : (circleBounds[2].y_1 - max);
+
+			//circleBounds[3].x_1 = (x - circleBounds[2].x_1 > 0) ? (circleBounds[2].x_1 + max) : (circleBounds[2].x_1 - max);
+			//circleBounds[3].y_1 = (CurrentHeight - y - circleBounds[2].y_1 > 0) ? (circleBounds[2].y_1 + max) : (circleBounds[2].y_1 - max);
+			circleBounds[3].x_2 = (x - circleBounds[3].x_1 > 0) ? (circleBounds[3].x_1 + max) : (circleBounds[3].x_1 - max);
+			//circleBounds[3].y_2 = (CurrentHeight - y - circleBounds[2].y_1 > 0) ? (circleBounds[2].y_1 + max) : (circleBounds[2].y_1 - max);
+
+			circles[circles.size() - 1].x = (circleBounds[0].x_1 + circleBounds[2].x_1) / 2;
+			circles[circles.size() - 1].y = (circleBounds[0].y_1 + circleBounds[2].y_1) / 2;
+			circles[circles.size() - 1].r = (abs(circleBounds[2].x_1 - circleBounds[0].x_1) / 2) > (abs(circleBounds[2].y_1 - circleBounds[0].y_1) / 2) ? (abs(circleBounds[2].x_1 - circleBounds[0].x_1) / 2) : (abs(circleBounds[2].y_1 - circleBounds[0].y_1) / 2);
+		}
+	}
+	else if (system_state == CIRCLE_STATE6)
+	{
+		if (left_button_down == 1)
+		{
+			int max = (abs(x - circleBounds[1].x_1) > abs(CurrentHeight - y - circleBounds[1].y_1)) ? abs(x - circleBounds[1].x_1) : abs(CurrentHeight - y - circleBounds[1].y_1);
+
+			//circleBounds[0].x_1 = (x - circleBounds[3].x_1 > 0) ? (circleBounds[3].x_1 + max) : (circleBounds[3].x_1 - max);
+			circleBounds[0].y_1 = (CurrentHeight - y - circleBounds[1].y_1 > 0) ? (circleBounds[1].y_1 + max) : (circleBounds[1].y_1 - max);
+			//circleBounds[0].x_2 = (x - circleBounds[3].x_1 > 0) ? (circleBounds[3].x_1 + max) : (circleBounds[3].x_1 - max);
+			//circleBounds[0].y_2 = (CurrentHeight - y - circleBounds[3].y_1 > 0) ? (circleBounds[3].y_1 + max) : (circleBounds[3].y_1 - max);
+
+			//circleBounds[1].x_1 = (x - circleBounds[3].x_1 > 0) ? (circleBounds[3].x_1 + max) : (circleBounds[3].x_1 - max);
+			//circleBounds[1].y_1 = (CurrentHeight - y - circleBounds[3].y_1 > 0) ? (circleBounds[3].y_1 + max) : (circleBounds[3].y_1 - max);
+			circleBounds[1].x_2 = (x - circleBounds[1].x_1 > 0) ? (circleBounds[1].x_1 + max) : (circleBounds[1].x_1 - max);
+			//circleBounds[1].y_2 = (CurrentHeight - y - circleBounds[3].y_1 > 0) ? (circleBounds[3].y_1 + max) : (circleBounds[3].y_1 - max);
+
+			circleBounds[2].x_1 = (x - circleBounds[1].x_1 > 0) ? (circleBounds[1].x_1 + max) : (circleBounds[1].x_1 - max);
+			//circleBounds[2].y_1 = (CurrentHeight - y - circleBounds[3].y_1 > 0) ? (circleBounds[3].y_1 + max) : (circleBounds[3].y_1 - max);
+			circleBounds[2].x_2 = (x - circleBounds[1].x_1 > 0) ? (circleBounds[1].x_1 + max) : (circleBounds[1].x_1 - max);
+			circleBounds[2].y_2 = (CurrentHeight - y - circleBounds[1].y_1 > 0) ? (circleBounds[1].y_1 + max) : (circleBounds[1].y_1 - max);
+
+			circleBounds[3].x_1 = (x - circleBounds[1].x_1 > 0) ? (circleBounds[1].x_1 + max) : (circleBounds[1].x_1 - max);
+			circleBounds[3].y_1 = (CurrentHeight - y - circleBounds[1].y_1 > 0) ? (circleBounds[1].y_1 + max) : (circleBounds[1].y_1 - max);
+			//circleBounds[3].x_2 = (x - circleBounds[3].x_1 > 0) ? (circleBounds[3].x_1 + max) : (circleBounds[3].x_1 - max);
+			circleBounds[3].y_2 = (CurrentHeight - y - circleBounds[1].y_1 > 0) ? (circleBounds[1].y_1 + max) : (circleBounds[1].y_1 - max);
+
+			circles[circles.size() - 1].x = (circleBounds[0].x_1 + circleBounds[2].x_1) / 2;
+			circles[circles.size() - 1].y = (circleBounds[0].y_1 + circleBounds[2].y_1) / 2;
+			circles[circles.size() - 1].r = (abs(circleBounds[2].x_1 - circleBounds[0].x_1) / 2) > (abs(circleBounds[2].y_1 - circleBounds[0].y_1) / 2) ? (abs(circleBounds[2].x_1 - circleBounds[0].x_1) / 2) : (abs(circleBounds[2].y_1 - circleBounds[0].y_1) / 2);
 		}
 	}
 	glutPostRedisplay();
