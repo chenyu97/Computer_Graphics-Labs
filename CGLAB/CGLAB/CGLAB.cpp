@@ -14,12 +14,22 @@ using namespace std;
 #define CIRCLE_STATE1 201
 #define CIRCLE_STATE2 202
 #define CIRCLE_STATE3 203
+#define CIRCLE_STATE4 204
+#define CIRCLE_STATE5 205
+#define CIRCLE_STATE6 206
 #define POLYGON 3
 #define POLYGON_STATE1 301
 #define POLYGON_STATE2 302
 #define POLYGON_STATE3 303
 #define POLYGON_STATE4 304
 #define POLYGON_STATE5 305
+#define ELLIPSE 4
+#define ELLIPSE_STATE1 401
+#define ELLIPSE_STATE2 402
+#define ELLIPSE_STATE3 403
+#define ELLIPSE_STATE4 404
+#define ELLIPSE_STATE5 405
+#define ELLIPSE_STATE6 406
 
 int system_state = 0;
 float CurrentWidth = InitialWidth;
@@ -28,6 +38,7 @@ int left_button_down = 0;
 int left_button_up = 0;
 int edit_polygon_point = -1;
 int isCircleEdit = 0;
+int isEllipseEdit = 0;
 
 struct Line
 {
@@ -50,6 +61,7 @@ vector<vector<Line>> polygons;
 vector<Ellipse> ellipses;
 
 Line circleBounds[4] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };  //to surround the current circle
+Line ellipseBounds[4] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };  //to surround the current ellipse
 
 void drawLines(int x_1, int y_1, int x_2, int y_2)
 {
@@ -362,6 +374,15 @@ void renderScene(void) {
 			drawLines(circleBounds[i].x_1, circleBounds[i].y_1, circleBounds[i].x_2, circleBounds[i].y_2);
 		}
 	}
+
+	//draw ellipseBounds
+	if (isEllipseEdit)
+	{
+		for (int i = 0; i < 4; i++)
+		{
+			drawLines(ellipseBounds[i].x_1, ellipseBounds[i].y_1, ellipseBounds[i].x_2, ellipseBounds[i].y_2);
+		}
+	}
 	
 	//draw ellipses
 	for (int i = 0; i < ellipses.size(); i++)
@@ -429,7 +450,7 @@ void mouseButton(int button, int state, int x, int y)
 				}
 				else
 				{	//start to draw the next line
-					left_button_down = 1;
+/*					left_button_down = 1;
 					system_state = LINE_STATE2;
 
 					Line newLine;
@@ -440,6 +461,8 @@ void mouseButton(int button, int state, int x, int y)
 					lines.push_back(newLine);
 
 					glutPostRedisplay();
+*/
+					system_state = LINE_STATE1;
 				}
 			}
 		}
@@ -543,7 +566,7 @@ void mouseButton(int button, int state, int x, int y)
 				}
 				else
 				{	//start to draw the next polygon
-					system_state = POLYGON_STATE2;
+/*					system_state = POLYGON_STATE2;
 					left_button_down = 1;
 
 					vector<Line> newPolygon;
@@ -558,46 +581,48 @@ void mouseButton(int button, int state, int x, int y)
 					polygons.push_back(newPolygon);
 
 					glutPostRedisplay();
+*/
+					system_state = POLYGON_STATE1;
 				}
 			}
 		}
 		break;
-	case CIRCLE_STATE1:
+	case ELLIPSE_STATE1://circlebounds follow the order : left, down, right, up
 		if (button == GLUT_LEFT_BUTTON)
 		{
 			if (state == GLUT_DOWN)
 			{
 				left_button_down = 1;
 
-				circleBounds[0].x_1 = x;
-				circleBounds[0].y_1 = CurrentHeight - y;
-				circleBounds[0].x_2 = x;
-				circleBounds[0].y_2 = CurrentHeight - y;  //no use
+				ellipseBounds[0].x_1 = x;
+				ellipseBounds[0].y_1 = CurrentHeight - y;
+				ellipseBounds[0].x_2 = x;
+				ellipseBounds[0].y_2 = CurrentHeight - y;  //no use
 
-				circleBounds[1].x_1 = x;
-				circleBounds[1].y_1 = CurrentHeight - y;  //no use
-				circleBounds[1].x_2 = x;  //no use
-				circleBounds[1].y_2 = CurrentHeight - y;  //no use
+				ellipseBounds[1].x_1 = x;
+				ellipseBounds[1].y_1 = CurrentHeight - y;  //no use
+				ellipseBounds[1].x_2 = x;  //no use
+				ellipseBounds[1].y_2 = CurrentHeight - y;  //no use
 
-				circleBounds[2].x_1 = x;  //no use
-				circleBounds[2].y_1 = CurrentHeight - y;  //no use
-				circleBounds[2].x_2 = x;  //no use
-				circleBounds[2].y_2 = CurrentHeight - y;
+				ellipseBounds[2].x_1 = x;  //no use
+				ellipseBounds[2].y_1 = CurrentHeight - y;  //no use
+				ellipseBounds[2].x_2 = x;  //no use
+				ellipseBounds[2].y_2 = CurrentHeight - y;
 
-				circleBounds[3].x_1 = x;  //no use
-				circleBounds[3].y_1 = CurrentHeight - y;
-				circleBounds[3].x_2 = x;
-				circleBounds[3].y_2 = CurrentHeight - y;
+				ellipseBounds[3].x_1 = x;  //no use
+				ellipseBounds[3].y_1 = CurrentHeight - y;
+				ellipseBounds[3].x_2 = x;
+				ellipseBounds[3].y_2 = CurrentHeight - y;
 
 				Ellipse newEllipse;
-				newEllipse.x = (circleBounds[0].x_1 + circleBounds[2].x_1) / 2;
-				newEllipse.y = (circleBounds[0].y_1 + circleBounds[2].y_1) / 2;
-				newEllipse.x_half_length = ((circleBounds[2].x_1 - circleBounds[0].x_1) > 0) ? ((circleBounds[2].x_1 - circleBounds[0].x_1) / 2) : ((circleBounds[0].x_1 - circleBounds[2].x_1) / 2);
-				newEllipse.y_half_length = ((circleBounds[2].y_1 - circleBounds[0].y_1) > 0) ? ((circleBounds[2].y_1 - circleBounds[0].y_1) / 2) : ((circleBounds[0].y_1 - circleBounds[2].y_1) / 2);
+				newEllipse.x = (ellipseBounds[0].x_1 + ellipseBounds[2].x_1) / 2;
+				newEllipse.y = (ellipseBounds[0].y_1 + ellipseBounds[2].y_1) / 2;
+				newEllipse.x_half_length = ((ellipseBounds[2].x_1 - ellipseBounds[0].x_1) > 0) ? ((ellipseBounds[2].x_1 - ellipseBounds[0].x_1) / 2) : ((ellipseBounds[0].x_1 - ellipseBounds[2].x_1) / 2);
+				newEllipse.y_half_length = ((ellipseBounds[2].y_1 - ellipseBounds[0].y_1) > 0) ? ((ellipseBounds[2].y_1 - ellipseBounds[0].y_1) / 2) : ((ellipseBounds[0].y_1 - ellipseBounds[2].y_1) / 2);
 				ellipses.push_back(newEllipse);
 
-				isCircleEdit = 1;
-				system_state = CIRCLE_STATE2;
+				isEllipseEdit = 1;
+				system_state = ELLIPSE_STATE2;
 
 				glutPostRedisplay();
 			}
@@ -607,17 +632,78 @@ void mouseButton(int button, int state, int x, int y)
 			}
 		}
 		break;
-	case CIRCLE_STATE2:
+	case ELLIPSE_STATE2:  //ready to edit point 2	
 		if (button == GLUT_LEFT_BUTTON)
 		{
 			if (state == GLUT_UP)
 			{
 				left_button_down = 0;
-				system_state = CIRCLE_STATE3;
+				system_state = ELLIPSE_STATE3;
 			}
 		}
 		break;
-	case CIRCLE_STATE3:
+	case ELLIPSE_STATE3:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_DOWN)
+			{
+				if ((abs(x - ellipseBounds[2].x_1) < 10) && (abs(CurrentHeight - y - ellipseBounds[2].y_1) < 10))
+				{
+					left_button_down = 1;
+					system_state = ELLIPSE_STATE2;
+				}
+				else if ((abs(x - ellipseBounds[0].x_1) < 10) && (abs(CurrentHeight - y - ellipseBounds[0].y_1) < 10))
+				{
+					left_button_down = 1;
+					system_state = ELLIPSE_STATE4;
+				}
+				else if ((abs(x - ellipseBounds[1].x_1) < 10) && (abs(CurrentHeight - y - ellipseBounds[1].y_1) < 10))
+				{
+					left_button_down = 1;
+					system_state = ELLIPSE_STATE5;
+				}
+				else if ((abs(x - ellipseBounds[3].x_1) < 10) && (abs(CurrentHeight - y - ellipseBounds[3].y_1) < 10))
+				{
+					left_button_down = 1;
+					system_state = ELLIPSE_STATE6;
+				}
+				else
+				{
+					isEllipseEdit = 0;
+					system_state = ELLIPSE_STATE1;
+				}
+			}
+		}
+		break;
+	case ELLIPSE_STATE4:  //ready to edit point 0
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{
+				left_button_down = 0;
+				system_state = ELLIPSE_STATE3;
+			}
+		}
+		break;
+	case ELLIPSE_STATE5:  //ready to edit point 1
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{
+				left_button_down = 0;
+				system_state = ELLIPSE_STATE3;
+			}
+		}
+		break;
+	case ELLIPSE_STATE6:  //ready to edit point 3
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{
+				left_button_down = 0;
+				system_state = ELLIPSE_STATE3;
+			}
+		}
 		break;
 	default: break;
 	}
@@ -659,34 +745,124 @@ void myMotion(int x, int y)
 			polygons[polygons.size() - 1][edit_polygon_point].y_1 = CurrentHeight - y;
 		}
 	}
-	else if (system_state == CIRCLE_STATE2)
+	else if (system_state == ELLIPSE_STATE2)
 	{
 		if (left_button_down == 1)
 		{
-			//			circleBounds[0].x_1 = x;
-			//			circleBounds[0].y_1 = CurrentHeight - y;
-			//			circleBounds[0].x_2 = x;
-			circleBounds[0].y_2 = CurrentHeight - y;
+			//			ellipseBounds[0].x_1 = x;
+			//			ellipseBounds[0].y_1 = CurrentHeight - y;
+			//			ellipseBounds[0].x_2 = x;
+			ellipseBounds[0].y_2 = CurrentHeight - y;
 
-			//			circleBounds[1].x_1 = x;
-			circleBounds[1].y_1 = CurrentHeight - y;
-			circleBounds[1].x_2 = x;
-			circleBounds[1].y_2 = CurrentHeight - y;
+			//			ellipseBounds[1].x_1 = x;
+			ellipseBounds[1].y_1 = CurrentHeight - y;
+			ellipseBounds[1].x_2 = x;
+			ellipseBounds[1].y_2 = CurrentHeight - y;
 
-			circleBounds[2].x_1 = x;
-			circleBounds[2].y_1 = CurrentHeight - y;
-			circleBounds[2].x_2 = x;
-			//			circleBounds[2].y_2 = CurrentHeight - y;
+			ellipseBounds[2].x_1 = x;
+			ellipseBounds[2].y_1 = CurrentHeight - y;
+			ellipseBounds[2].x_2 = x;
+			//			ellipseBounds[2].y_2 = CurrentHeight - y;
 
-			circleBounds[3].x_1 = x;
-			//			circleBounds[3].y_1 = CurrentHeight - y;
-			//			circleBounds[3].x_2 = x;
-			//			circleBounds[3].y_2 = CurrentHeight - y;
+			ellipseBounds[3].x_1 = x;
+			//			ellipseBounds[3].y_1 = CurrentHeight - y;
+			//			ellipseBounds[3].x_2 = x;
+			//			ellipseBounds[3].y_2 = CurrentHeight - y;
 
-			ellipses[ellipses.size() - 1].x = (circleBounds[0].x_1 + circleBounds[2].x_1) / 2;
-			ellipses[ellipses.size() - 1].y = (circleBounds[0].y_1 + circleBounds[2].y_1) / 2;
-			ellipses[ellipses.size() - 1].x_half_length = ((circleBounds[2].x_1 - circleBounds[0].x_1) > 0) ? ((circleBounds[2].x_1 - circleBounds[0].x_1) / 2) : ((circleBounds[0].x_1 - circleBounds[2].x_1) / 2);
-			ellipses[ellipses.size() - 1].y_half_length = ((circleBounds[2].y_1 - circleBounds[0].y_1) > 0) ? ((circleBounds[2].y_1 - circleBounds[0].y_1) / 2) : ((circleBounds[0].y_1 - circleBounds[2].y_1) / 2);
+			ellipses[ellipses.size() - 1].x = (ellipseBounds[0].x_1 + ellipseBounds[2].x_1) / 2;
+			ellipses[ellipses.size() - 1].y = (ellipseBounds[0].y_1 + ellipseBounds[2].y_1) / 2;
+			ellipses[ellipses.size() - 1].x_half_length = ((ellipseBounds[2].x_1 - ellipseBounds[0].x_1) > 0) ? ((ellipseBounds[2].x_1 - ellipseBounds[0].x_1) / 2) : ((ellipseBounds[0].x_1 - ellipseBounds[2].x_1) / 2);
+			ellipses[ellipses.size() - 1].y_half_length = ((ellipseBounds[2].y_1 - ellipseBounds[0].y_1) > 0) ? ((ellipseBounds[2].y_1 - ellipseBounds[0].y_1) / 2) : ((ellipseBounds[0].y_1 - ellipseBounds[2].y_1) / 2);
+		}
+	}
+	else if (system_state == ELLIPSE_STATE4)
+	{
+		if (left_button_down == 1)
+		{
+			ellipseBounds[0].x_1 = x;
+			ellipseBounds[0].y_1 = CurrentHeight - y;
+			ellipseBounds[0].x_2 = x;
+			//			ellipseBounds[0].y_2 = CurrentHeight - y;
+
+			ellipseBounds[1].x_1 = x;
+			//      	ellipseBounds[1].y_1 = CurrentHeight - y;
+			//			ellipseBounds[1].x_2 = x;
+			//			ellipseBounds[1].y_2 = CurrentHeight - y;
+
+			//			ellipseBounds[2].x_1 = x;
+			//			ellipseBounds[2].y_1 = CurrentHeight - y;
+			//			ellipseBounds[2].x_2 = x;
+			ellipseBounds[2].y_2 = CurrentHeight - y;
+
+			//			ellipseBounds[3].x_1 = x;
+			ellipseBounds[3].y_1 = CurrentHeight - y;
+			ellipseBounds[3].x_2 = x;
+			ellipseBounds[3].y_2 = CurrentHeight - y;
+
+			ellipses[ellipses.size() - 1].x = (ellipseBounds[0].x_1 + ellipseBounds[2].x_1) / 2;
+			ellipses[ellipses.size() - 1].y = (ellipseBounds[0].y_1 + ellipseBounds[2].y_1) / 2;
+			ellipses[ellipses.size() - 1].x_half_length = ((ellipseBounds[2].x_1 - ellipseBounds[0].x_1) > 0) ? ((ellipseBounds[2].x_1 - ellipseBounds[0].x_1) / 2) : ((ellipseBounds[0].x_1 - ellipseBounds[2].x_1) / 2);
+			ellipses[ellipses.size() - 1].y_half_length = ((ellipseBounds[2].y_1 - ellipseBounds[0].y_1) > 0) ? ((ellipseBounds[2].y_1 - ellipseBounds[0].y_1) / 2) : ((ellipseBounds[0].y_1 - ellipseBounds[2].y_1) / 2);
+		}
+	}
+	else if (system_state == ELLIPSE_STATE5)
+	{
+		if (left_button_down == 1)
+		{
+			ellipseBounds[0].x_1 = x;
+			//			ellipseBounds[0].y_1 = CurrentHeight - y;
+			ellipseBounds[0].x_2 = x;
+			ellipseBounds[0].y_2 = CurrentHeight - y;
+
+			ellipseBounds[1].x_1 = x;
+			ellipseBounds[1].y_1 = CurrentHeight - y;
+			//			ellipseBounds[1].x_2 = x;
+			ellipseBounds[1].y_2 = CurrentHeight - y;
+
+			//			ellipseBounds[2].x_1 = x;
+			ellipseBounds[2].y_1 = CurrentHeight - y;
+			//			ellipseBounds[2].x_2 = x;
+			//			ellipseBounds[2].y_2 = CurrentHeight - y;
+
+			//			ellipseBounds[3].x_1 = x;
+			//			ellipseBounds[3].y_1 = CurrentHeight - y;
+			ellipseBounds[3].x_2 = x;
+			//			ellipseBounds[3].y_2 = CurrentHeight - y;
+
+			ellipses[ellipses.size() - 1].x = (ellipseBounds[0].x_1 + ellipseBounds[2].x_1) / 2;
+			ellipses[ellipses.size() - 1].y = (ellipseBounds[0].y_1 + ellipseBounds[2].y_1) / 2;
+			ellipses[ellipses.size() - 1].x_half_length = ((ellipseBounds[2].x_1 - ellipseBounds[0].x_1) > 0) ? ((ellipseBounds[2].x_1 - ellipseBounds[0].x_1) / 2) : ((ellipseBounds[0].x_1 - ellipseBounds[2].x_1) / 2);
+			ellipses[ellipses.size() - 1].y_half_length = ((ellipseBounds[2].y_1 - ellipseBounds[0].y_1) > 0) ? ((ellipseBounds[2].y_1 - ellipseBounds[0].y_1) / 2) : ((ellipseBounds[0].y_1 - ellipseBounds[2].y_1) / 2);
+		}
+	}
+	else if (system_state == ELLIPSE_STATE6)
+	{
+		if (left_button_down == 1)
+		{
+			//			ellipseBounds[0].x_1 = x;
+			ellipseBounds[0].y_1 = CurrentHeight - y;
+			//			ellipseBounds[0].x_2 = x;
+			//			ellipseBounds[0].y_2 = CurrentHeight - y;
+
+			//			ellipseBounds[1].x_1 = x;
+			//			ellipseBounds[1].y_1 = CurrentHeight - y;
+			ellipseBounds[1].x_2 = x;
+			//			ellipseBounds[1].y_2 = CurrentHeight - y;
+
+			ellipseBounds[2].x_1 = x;
+			//			ellipseBounds[2].y_1 = CurrentHeight - y;
+			ellipseBounds[2].x_2 = x;
+			ellipseBounds[2].y_2 = CurrentHeight - y;
+
+			ellipseBounds[3].x_1 = x;
+			ellipseBounds[3].y_1 = CurrentHeight - y;
+			//			ellipseBounds[3].x_2 = x;
+			ellipseBounds[3].y_2 = CurrentHeight - y;
+
+			ellipses[ellipses.size() - 1].x = (ellipseBounds[0].x_1 + ellipseBounds[2].x_1) / 2;
+			ellipses[ellipses.size() - 1].y = (ellipseBounds[0].y_1 + ellipseBounds[2].y_1) / 2;
+			ellipses[ellipses.size() - 1].x_half_length = ((ellipseBounds[2].x_1 - ellipseBounds[0].x_1) > 0) ? ((ellipseBounds[2].x_1 - ellipseBounds[0].x_1) / 2) : ((ellipseBounds[0].x_1 - ellipseBounds[2].x_1) / 2);
+			ellipses[ellipses.size() - 1].y_half_length = ((ellipseBounds[2].y_1 - ellipseBounds[0].y_1) > 0) ? ((ellipseBounds[2].y_1 - ellipseBounds[0].y_1) / 2) : ((ellipseBounds[0].y_1 - ellipseBounds[2].y_1) / 2);
 		}
 	}
 	glutPostRedisplay();
@@ -716,6 +892,9 @@ void mainMenuProc(int option) {
 	case POLYGON:
 		system_state = POLYGON_STATE1;
 		break;
+	case ELLIPSE:
+		system_state = ELLIPSE_STATE1;
+		break;
 	default: break;
 	}
 }
@@ -726,6 +905,7 @@ void createPopupMenus() {
 
 	glutAddMenuEntry("Draw lines", LINE);
 	glutAddMenuEntry("Draw circles", CIRCLE);
+	glutAddMenuEntry("Draw ellipses", ELLIPSE);
 	glutAddMenuEntry("Draw polygons", POLYGON);
 
 	/*
