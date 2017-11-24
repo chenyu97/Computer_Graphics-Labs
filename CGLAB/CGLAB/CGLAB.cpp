@@ -31,6 +31,12 @@ using namespace std;
 #define ELLIPSE_STATE4 404
 #define ELLIPSE_STATE5 405
 #define ELLIPSE_STATE6 406
+#define FILLEDAREA 5
+#define FILLEDAREA_STATE1 501
+#define FILLEDAREA_STATE2 502
+#define FILLEDAREA_STATE3 503
+#define FILLEDAREA_STATE4 504
+#define FILLEDAREA_STATE5 505
 
 int system_state = 0;
 float CurrentWidth = InitialWidth;
@@ -38,6 +44,8 @@ float CurrentHeight = InitialHeight;
 int left_button_down = 0;
 int left_button_up = 0;
 int edit_polygon_point = -1;
+int edit_filledArea_point = -1;
+int isFilledAreaEdit = 0;
 int isCircleEdit = 0;
 int isEllipseEdit = 0;
 
@@ -83,6 +91,7 @@ vector<Line> lines;
 vector<vector<Line>> polygons;
 vector<Ellipse> ellipses;
 vector<Circle> circles;
+vector<vector<Line>> filledAreas;
 
 Line circleBounds[4] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };  //to surround the current circle
 Line ellipseBounds[4] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };  //to surround the current ellipse
@@ -482,6 +491,10 @@ void fillArea(vector<Line> p)
 		}
 
 	}
+	for (int i = 0; i < ET.size(); i++)
+	{
+		ET[i].clear();
+	}
 	ET.clear();
 	AET.clear();
 
@@ -543,10 +556,19 @@ void renderScene(void) {
 		{
 			drawLines(polygons[i][j].x_1, polygons[i][j].y_1, polygons[i][j].x_2, polygons[i][j].y_2);
 		}
+	}
 
-		if (i != polygons.size() - 1)
+	//draw filledAreas
+	for (int i = 0; i < filledAreas.size(); i++)
+	{
+		for (int j = 0; j < filledAreas[i].size(); j++)
 		{
-			fillArea(polygons[i]);
+			drawLines(filledAreas[i][j].x_1, filledAreas[i][j].y_1, filledAreas[i][j].x_2, filledAreas[i][j].y_2);
+		}
+
+		if ((i != filledAreas.size() - 1) || (isFilledAreaEdit == 1))
+		{
+			fillArea(filledAreas[i]);
 		}
 	}
 
@@ -1012,6 +1034,112 @@ void mouseButton(int button, int state, int x, int y)
 			}
 		}
 		break;
+	case FILLEDAREA_STATE1:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_DOWN)
+			{	//start to draw a filledArea
+				system_state = FILLEDAREA_STATE2;
+				left_button_down = 1;
+
+				vector<Line> newFilledArea;
+
+				Line newLine;
+				newLine.x_1 = x;
+				newLine.y_1 = CurrentHeight - y;
+				newLine.x_2 = x;
+				newLine.y_2 = CurrentHeight - y;
+
+				newFilledArea.push_back(newLine);
+				filledAreas.push_back(newFilledArea);
+
+				glutPostRedisplay();
+
+			}
+		}
+		break;
+	case FILLEDAREA_STATE2:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{
+				left_button_up = 1;
+				left_button_down = 0;
+				system_state = FILLEDAREA_STATE3;
+			}
+		}
+		break;
+	case FILLEDAREA_STATE3:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_DOWN)
+			{
+				if ((abs(x - filledAreas[filledAreas.size() - 1][0].x_1) < 5) && (abs(CurrentHeight - y - filledAreas[filledAreas.size() - 1][0].y_1) < 5))
+				{	//finish drawing the filledArea
+					system_state = FILLEDAREA_STATE4;
+					left_button_up = 0;
+					filledAreas[filledAreas.size() - 1][filledAreas[filledAreas.size() - 1].size() - 1].x_2 = filledAreas[filledAreas.size() - 1][0].x_1;
+					filledAreas[filledAreas.size() - 1][filledAreas[filledAreas.size() - 1].size() - 1].y_2 = filledAreas[filledAreas.size() - 1][0].y_1;
+				}
+				else
+				{	//start to draw the next edge of the filledArea
+					system_state = FILLEDAREA_STATE2;
+					left_button_down = 1;
+					left_button_up = 0;
+					Line newLine;
+
+					newLine.x_1 = filledAreas[filledAreas.size() - 1][filledAreas[filledAreas.size() - 1].size() - 1].x_2;
+					newLine.y_1 = filledAreas[filledAreas.size() - 1][filledAreas[filledAreas.size() - 1].size() - 1].y_2;
+					newLine.x_2 = filledAreas[filledAreas.size() - 1][filledAreas[filledAreas.size() - 1].size() - 1].x_2;
+					newLine.y_2 = filledAreas[filledAreas.size() - 1][filledAreas[filledAreas.size() - 1].size() - 1].y_2;
+
+					filledAreas[filledAreas.size() - 1].push_back(newLine);
+
+					glutPostRedisplay();
+				}
+			}
+		}
+		break;
+	case FILLEDAREA_STATE4:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{	//start to edit the filledArea
+				system_state = FILLEDAREA_STATE5;
+				isFilledAreaEdit = 1;
+			}
+		}
+		break;
+	case FILLEDAREA_STATE5:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{
+				left_button_down = 0;
+			}
+			else if (state == GLUT_DOWN)
+			{	//to edit the filledArea
+				int i = 0;
+				for (; i < filledAreas[filledAreas.size() - 1].size(); i++)
+				{	//judge whether one vertex of all need to drag
+					if ((abs(x - filledAreas[filledAreas.size() - 1][i].x_1) < 10) && (abs(CurrentHeight - y - filledAreas[filledAreas.size() - 1][i].y_1) < 10))
+						break;
+				}
+				if (i < filledAreas[filledAreas.size() - 1].size())
+				{
+					left_button_down = 1;
+					//(i - 1)th and ith edge need to be edited;
+					edit_filledArea_point = i;
+					system_state = FILLEDAREA_STATE5;
+				}
+				else
+				{	//start to draw the next filledArea
+					isFilledAreaEdit = 0;
+					system_state = FILLEDAREA_STATE1;
+				}
+			}
+		}
+		break;
 	default: break;
 	}
 }
@@ -1050,6 +1178,32 @@ void myMotion(int x, int y)
 			}
 			polygons[polygons.size() - 1][edit_polygon_point].x_1 = x;
 			polygons[polygons.size() - 1][edit_polygon_point].y_1 = CurrentHeight - y;
+		}
+	}
+	else if ((system_state == FILLEDAREA_STATE1) || (system_state == FILLEDAREA_STATE2) || (system_state == FILLEDAREA_STATE3))
+	{
+		if (left_button_down == 1)
+		{	//drag one end point of the line when drawing the filledArea
+			filledAreas[filledAreas.size() - 1][filledAreas[filledAreas.size() - 1].size() - 1].x_2 = x;
+			filledAreas[filledAreas.size() - 1][filledAreas[filledAreas.size() - 1].size() - 1].y_2 = CurrentHeight - y;
+		}
+	}
+	else if (system_state == FILLEDAREA_STATE5)
+	{
+		if (left_button_down == 1)
+		{	//drag one vertex of the polygon when editing the filledArea
+			if (edit_filledArea_point == 0)
+			{
+				filledAreas[filledAreas.size() - 1][filledAreas[filledAreas.size() - 1].size() - 1].x_2 = x;
+				filledAreas[filledAreas.size() - 1][filledAreas[filledAreas.size() - 1].size() - 1].y_2 = CurrentHeight - y;
+			}
+			else
+			{
+				filledAreas[filledAreas.size() - 1][edit_filledArea_point - 1].x_2 = x;
+				filledAreas[filledAreas.size() - 1][edit_filledArea_point - 1].y_2 = CurrentHeight - y;
+			}
+			filledAreas[filledAreas.size() - 1][edit_filledArea_point].x_1 = x;
+			filledAreas[filledAreas.size() - 1][edit_filledArea_point].y_1 = CurrentHeight - y;
 		}
 	}
 	else if (system_state == ELLIPSE_STATE2)
@@ -1309,6 +1463,14 @@ void myPassiveMotion(int x, int y)
 			polygons[polygons.size() - 1][polygons[polygons.size() - 1].size() - 1].y_2 = CurrentHeight - y;
 		}
 	}
+	else if ((system_state == FILLEDAREA_STATE2) || (system_state == FILLEDAREA_STATE3))
+	{	//drag one end point of the line when drawing the filledArea
+		if (left_button_up == 1)
+		{
+			filledAreas[filledAreas.size() - 1][filledAreas[filledAreas.size() - 1].size() - 1].x_2 = x;
+			filledAreas[filledAreas.size() - 1][filledAreas[filledAreas.size() - 1].size() - 1].y_2 = CurrentHeight - y;
+		}
+	}
 	glutPostRedisplay();
 }
 
@@ -1326,6 +1488,9 @@ void mainMenuProc(int option) {
 	case ELLIPSE:
 		system_state = ELLIPSE_STATE1;
 		break;
+	case FILLEDAREA:
+		system_state = FILLEDAREA_STATE1;
+		break;
 	default: break;
 	}
 }
@@ -1338,7 +1503,7 @@ void createPopupMenus() {
 	glutAddMenuEntry("Draw circles", CIRCLE);
 	glutAddMenuEntry("Draw ellipses", ELLIPSE);
 	glutAddMenuEntry("Draw polygons", POLYGON);
-
+	glutAddMenuEntry("Draw filledAreas", FILLEDAREA);
 	/*
 	fillMenu = glutCreateMenu(processFillMenu);
 	glutAddMenuEntry("Fill", FILL);
