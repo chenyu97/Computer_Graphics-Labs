@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <vector>
+#include <list>
 #include <GL/glut.h>
 using namespace std;
 
@@ -62,6 +63,21 @@ struct  Circle
 	int y;
 	int r;
 };
+
+struct Node{
+	float y_max;
+	float x;
+	float dx;
+};
+
+struct floatPoint
+{
+	float x_1;
+	float y_1;
+};
+
+vector<list<Node>> ET;
+list<Node> AET;
 
 vector<Line> lines;
 vector<vector<Line>> polygons;
@@ -357,6 +373,123 @@ void drawEllipse(Ellipse e)
 	return;
 }
 
+bool compareFun(const Node &first, const Node &second)
+{
+	return (first.x < second.x);
+}
+
+void fillArea(vector<Line> p)
+{
+	glColor3f(0, 0, 0);
+	glBegin(GL_POINTS);
+
+	vector<floatPoint> floatPoints;
+
+	//find the y_min and y_max
+	int y_min = p[0].y_1;
+	int y_max = p[0].y_1;
+	for (int i = 0; i < p.size(); i++)
+	{
+		if (p[i].y_1 < y_min)
+			y_min = p[i].y_1;
+		if (p[i].y_2 < y_min)
+			y_min = p[i].y_2;
+		if (p[i].y_1 > y_max)
+			y_max = p[i].y_1;
+		if (p[i].y_2 > y_max)
+			y_max = p[i].y_2;
+
+		floatPoint newFloatPoint;
+		newFloatPoint.x_1 = p[i].x_1;
+		newFloatPoint.y_1 = p[i].y_1;
+		floatPoints.push_back(newFloatPoint);
+	}
+
+//	y_min <=> 0, y_max <=> y_max - y_min
+	for (int i = y_min; i <= y_max; i++)
+	{
+		list<Node> nodeList;
+		ET.push_back(nodeList);
+	}
+
+	for (int i = 0; i <= y_max - y_min; i++)
+	{
+		for (int j = 0; j < floatPoints.size(); j++)
+		{
+			if (floatPoints[j].y_1 == y_min + i)
+			{
+				if (floatPoints[(j - 1 + floatPoints.size()) % (floatPoints.size())].y_1 > floatPoints[j].y_1)
+				{
+					Node newNode;
+					newNode.x = floatPoints[j].x_1;
+					newNode.y_max = floatPoints[(j - 1 + floatPoints.size()) % (floatPoints.size())].y_1;
+					newNode.dx = (floatPoints[(j - 1 + floatPoints.size()) % (floatPoints.size())].x_1 - floatPoints[j].x_1) / (floatPoints[(j - 1 + floatPoints.size()) % (floatPoints.size())].y_1 - floatPoints[j].y_1);
+					ET[i].push_front(newNode);
+				}
+
+				if (floatPoints[(j + 1 + floatPoints.size()) % (floatPoints.size())].y_1 > floatPoints[j].y_1)
+				{
+					Node newNode;
+					newNode.x = floatPoints[j].x_1;
+					newNode.y_max = floatPoints[(j + 1 + floatPoints.size()) % (floatPoints.size())].y_1;
+					newNode.dx = (floatPoints[(j + 1 + floatPoints.size()) % (floatPoints.size())].x_1 - floatPoints[j].x_1) / (floatPoints[(j + 1 + floatPoints.size()) % (floatPoints.size())].y_1 - floatPoints[j].y_1);
+					ET[i].push_front(newNode);
+				}
+			}
+		}
+	}
+
+	for (int i = 0; i <= y_max - y_min; i++)
+	{
+		for (list<Node>::iterator it = AET.begin(); it != AET.end(); it++)
+		{
+			(*it).x += (*it).dx;
+		}
+
+		AET.sort(compareFun);
+
+		for (list<Node>::iterator it = AET.begin(); it != AET.end(); )
+		{
+			if ((*it).y_max == (i + y_min))
+			{
+				list<Node>::iterator it2 = it;
+				it2++;
+				AET.erase(it);
+				it = it2;
+			}
+			else
+			{
+				it++;
+			}
+		}
+
+		for (list<Node>::iterator it = ET[i].begin(); it != ET[i].end(); it++)
+		{
+			AET.push_front(*it);
+		}
+		AET.sort(compareFun);
+
+		for (list<Node>::iterator it = AET.begin(); it != AET.end();)
+		{
+			list<Node>::iterator it2 = it;
+			it2++;
+			for (int j = (*it).x; j <= (*(it2)).x; j++)
+			{
+				glVertex2i(j, i + y_min);
+			}
+			it++;
+			it++;
+		}
+
+	}
+	ET.clear();
+	AET.clear();
+
+	glEnd();
+
+	return;
+}
+
 void InitEnvironment()
 {
 	glClearColor(1, 1, 1, 0);
@@ -407,7 +540,14 @@ void renderScene(void) {
 	for (int i = 0; i < polygons.size(); i++)
 	{
 		for (int j = 0; j < polygons[i].size(); j++)
+		{
 			drawLines(polygons[i][j].x_1, polygons[i][j].y_1, polygons[i][j].x_2, polygons[i][j].y_2);
+		}
+
+		if (i != polygons.size() - 1)
+		{
+			fillArea(polygons[i]);
+		}
 	}
 
 	//draw circleBounds
