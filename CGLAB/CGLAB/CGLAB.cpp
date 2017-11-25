@@ -1,5 +1,6 @@
 #include <iostream>
 #include <stdlib.h>
+#include <cmath>
 #include <vector>
 #include <list>
 #include <GL/glut.h>
@@ -11,6 +12,7 @@ using namespace std;
 #define LINE_STATE1 101
 #define LINE_STATE2 102
 #define LINE_STATE3 103
+#define LINE_STATE4 104
 #define CIRCLE 2
 #define CIRCLE_STATE1 201
 #define CIRCLE_STATE2 202
@@ -43,11 +45,18 @@ float CurrentWidth = InitialWidth;
 float CurrentHeight = InitialHeight;
 int left_button_down = 0;
 int left_button_up = 0;
+int edit_line_point = -1;
 int edit_polygon_point = -1;
 int edit_filledArea_point = -1;
 int isFilledAreaEdit = 0;
+int isFilledAreaEnd = 0;
 int isCircleEdit = 0;
 int isEllipseEdit = 0;
+int resizeLine = 0;
+int resizePolygon = 0;
+int resizeFilledArea = 0;
+int resizeCircle = 0;
+int resizeEllipse = 0;
 
 struct Line
 {
@@ -566,14 +575,14 @@ void renderScene(void) {
 			drawLines(filledAreas[i][j].x_1, filledAreas[i][j].y_1, filledAreas[i][j].x_2, filledAreas[i][j].y_2);
 		}
 
-		if ((i != filledAreas.size() - 1) || (isFilledAreaEdit == 1))
+		if ((i != filledAreas.size() - 1) || (isFilledAreaEdit == 1) || (isFilledAreaEnd == 1))
 		{
 			fillArea(filledAreas[i]);
 		}
 	}
 
 	//draw circleBounds
-	if (isCircleEdit)
+	if (isCircleEdit && ((system_state / 100) == 2) && (system_state != CIRCLE_STATE1))
 	{
 		for (int i = 0; i < 4; i++)
 		{
@@ -588,7 +597,7 @@ void renderScene(void) {
 	}
 
 	//draw ellipseBounds
-	if (isEllipseEdit)
+	if (isEllipseEdit && ((system_state / 100) == 4) && (system_state != ELLIPSE_STATE1))
 	{
 		for (int i = 0; i < 4; i++)
 		{
@@ -614,6 +623,8 @@ void mouseButton(int button, int state, int x, int y)
 		{
 			if (state == GLUT_DOWN)
 			{	//start to draw a line
+				edit_line_point = -1;
+				resizeLine = 0;
 				left_button_down = 1;
 				system_state = LINE_STATE2;
 
@@ -649,16 +660,20 @@ void mouseButton(int button, int state, int x, int y)
 			{
 				if ((abs(x - lines[lines.size() - 1].x_1) < 10) && (abs(CurrentHeight - y - lines[lines.size() - 1].y_1) < 10))
 				{	//start to edit the line
+/*
 					lines[lines.size() - 1].x_1 = lines[lines.size() - 1].x_2;
 					lines[lines.size() - 1].y_1 = lines[lines.size() - 1].y_2;
+*/					
+					edit_line_point = 0;
 					left_button_down = 1;
-					system_state = LINE_STATE2;
+					system_state = LINE_STATE4;
 				}
 				else if ((abs(x - lines[lines.size() - 1].x_2) < 10) && (abs(CurrentHeight - y - lines[lines.size() - 1].y_2) < 10))
 				{	//start to edit the line too
+					edit_line_point = 1;
 					left_button_down = 1;
 
-					system_state = LINE_STATE2;
+					system_state = LINE_STATE4;
 				}
 				else
 				{	//start to draw the next line
@@ -673,17 +688,31 @@ void mouseButton(int button, int state, int x, int y)
 					lines.push_back(newLine);
 
 					glutPostRedisplay();
-*/
+*/		
+					edit_line_point = -1;
+					resizeLine = 0;
 					system_state = LINE_STATE1;
 				}
 			}
 		}
+	case LINE_STATE4:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{
+				left_button_down = 0;
+				system_state = LINE_STATE3;
+			}
+		}
+		break;
 		break;
 	case POLYGON_STATE1:
 		if (button == GLUT_LEFT_BUTTON)
 		{
 			if (state == GLUT_DOWN)
 			{	//start to draw a polygon
+				resizePolygon = 0;
+				edit_polygon_point = -1;
 				system_state = POLYGON_STATE2;
 				left_button_down = 1;
 
@@ -794,6 +823,8 @@ void mouseButton(int button, int state, int x, int y)
 
 					glutPostRedisplay();
 */
+					resizePolygon = 0;
+					edit_polygon_point = -1;
 					system_state = POLYGON_STATE1;
 				}
 			}
@@ -804,6 +835,8 @@ void mouseButton(int button, int state, int x, int y)
 		{
 			if (state == GLUT_DOWN)
 			{
+				resizeEllipse = 0;
+				isEllipseEdit = 0;
 				left_button_down = 1;
 
 				ellipseBounds[0].x_1 = x;
@@ -881,6 +914,7 @@ void mouseButton(int button, int state, int x, int y)
 				}
 				else
 				{
+					resizeEllipse = 0;
 					isEllipseEdit = 0;
 					system_state = ELLIPSE_STATE1;
 				}
@@ -922,6 +956,8 @@ void mouseButton(int button, int state, int x, int y)
 		{
 			if (state == GLUT_DOWN)
 			{
+				resizeCircle = 0;
+				isCircleEdit = 0;
 				left_button_down = 1;
 
 				circleBounds[0].x_1 = x;
@@ -998,6 +1034,7 @@ void mouseButton(int button, int state, int x, int y)
 				}
 				else
 				{
+					resizeCircle = 0;
 					isCircleEdit = 0;
 					system_state = CIRCLE_STATE1;
 				}
@@ -1039,6 +1076,8 @@ void mouseButton(int button, int state, int x, int y)
 		{
 			if (state == GLUT_DOWN)
 			{	//start to draw a filledArea
+				resizeFilledArea = 0;
+				isFilledAreaEdit = 0;
 				system_state = FILLEDAREA_STATE2;
 				left_button_down = 1;
 
@@ -1052,6 +1091,8 @@ void mouseButton(int button, int state, int x, int y)
 
 				newFilledArea.push_back(newLine);
 				filledAreas.push_back(newFilledArea);
+
+				isFilledAreaEnd = 0;
 
 				glutPostRedisplay();
 
@@ -1135,6 +1176,8 @@ void mouseButton(int button, int state, int x, int y)
 				else
 				{	//start to draw the next filledArea
 					isFilledAreaEdit = 0;
+					isFilledAreaEnd = 1;
+					resizeFilledArea = 0;
 					system_state = FILLEDAREA_STATE1;
 				}
 			}
@@ -1150,8 +1193,24 @@ void myMotion(int x, int y)
 	{	//drag one end point of the line when drawing or editing the line
 		if (left_button_down == 1)
 		{
-			lines[lines.size() - 1].x_2 = x;
-			lines[lines.size() - 1].y_2 = CurrentHeight - y;
+				lines[lines.size() - 1].x_2 = x;
+				lines[lines.size() - 1].y_2 = CurrentHeight - y;
+		}
+	}
+	else if (system_state == LINE_STATE4)
+	{
+		if (left_button_down == 1)
+		{
+			if (edit_line_point == 0)
+			{
+				lines[lines.size() - 1].x_1 = x;
+				lines[lines.size() - 1].y_1 = CurrentHeight - y;
+			}
+			else if (edit_line_point == 1)
+			{
+				lines[lines.size() - 1].x_2 = x;
+				lines[lines.size() - 1].y_2 = CurrentHeight - y;
+			}
 		}
 	}
 	else if ((system_state == POLYGON_STATE1) || (system_state == POLYGON_STATE2) || (system_state == POLYGON_STATE3))
@@ -1474,6 +1533,507 @@ void myPassiveMotion(int x, int y)
 	glutPostRedisplay();
 }
 
+void processNormalKeys(unsigned char key, int x, int y) 
+{
+	switch (system_state){
+	case LINE_STATE3:
+		if (key == 'a')
+		{
+			lines[lines.size() - 1].x_1 -= 1;
+			lines[lines.size() - 1].x_2 -= 1;
+		}
+		else if (key == 'd')
+		{
+			lines[lines.size() - 1].x_1 += 1;
+			lines[lines.size() - 1].x_2 += 1;
+		}
+		else if (key == 'w')
+		{
+			lines[lines.size() - 1].y_1 += 1;
+			lines[lines.size() - 1].y_2 += 1;
+		}
+		else if (key == 's')
+		{
+			lines[lines.size() - 1].y_1 -= 1;
+			lines[lines.size() - 1].y_2 -= 1;
+		}
+		else if (key == 'q')
+		{
+			int x1 = lines[lines.size() - 1].x_1;
+			int y1 = lines[lines.size() - 1].y_1;
+			int x2 = lines[lines.size() - 1].x_2;
+			int y2 = lines[lines.size() - 1].y_2;
+			lines[lines.size() - 1].x_1 = (x1 - x1) * 0 - (y1 - y1)* 1 + x1;
+			lines[lines.size() - 1].y_1 = (x1 - x1) * 1 + (y1 - y1) * 0 + y1;
+			lines[lines.size() - 1].x_2 = (x2 - x1) * 0 - (y2 - y1) * 1 + x1;
+			lines[lines.size() - 1].y_2 = (x2 - x1) * 1 + (y2 - y1) * 0 + y1;
+		}
+		else if (key == 'e')
+		{
+			int x1 = lines[lines.size() - 1].x_1;
+			int y1 = lines[lines.size() - 1].y_1;
+			int x2 = lines[lines.size() - 1].x_2;
+			int y2 = lines[lines.size() - 1].y_2;
+			lines[lines.size() - 1].x_1 = (x1 - x1) * 0 - (y1 - y1) * (-1) + x1;
+			lines[lines.size() - 1].y_1 = (x1 - x1) * (-1) + (y1 - y1) * 0 + y1;
+			lines[lines.size() - 1].x_2 = (x2 - x1) * 0 - (y2 - y1) * (-1) + x1;
+			lines[lines.size() - 1].y_2 = (x2 - x1) * (-1) + (y2 - y1) * 0 + y1;
+		}
+		else if (key == 'z')
+		{
+			if (resizeLine > 0)
+			{
+				lines[lines.size() - 1].x_1 = lines[lines.size() - 1].x_1 / 2;
+				lines[lines.size() - 1].y_1 = lines[lines.size() - 1].y_1 / 2;
+				lines[lines.size() - 1].x_2 = lines[lines.size() - 1].x_2 / 2;
+				lines[lines.size() - 1].y_2 = lines[lines.size() - 1].y_2 / 2;
+				resizeLine--;
+			}
+		}
+		else if (key == 'x')
+		{
+			lines[lines.size() - 1].x_1 = lines[lines.size() - 1].x_1 * 2;
+			lines[lines.size() - 1].y_1 = lines[lines.size() - 1].y_1 * 2;
+			lines[lines.size() - 1].x_2 = lines[lines.size() - 1].x_2 * 2;
+			lines[lines.size() - 1].y_2 = lines[lines.size() - 1].y_2 * 2;
+			resizeLine++;
+		}
+		break;
+	case POLYGON_STATE5:
+		if (key == 'a')
+		{
+			for (int i = 0; i < polygons[polygons.size() - 1].size(); i++)
+			{
+				polygons[polygons.size() - 1][i].x_1 -= 1;
+				polygons[polygons.size() - 1][i].x_2 -= 1;
+			}
+		}
+		else if (key == 'd')
+		{
+			for (int i = 0; i < polygons[polygons.size() - 1].size(); i++)
+			{
+				polygons[polygons.size() - 1][i].x_1 += 1;
+				polygons[polygons.size() - 1][i].x_2 += 1;
+			}
+		}
+		else if (key == 'w')
+		{
+			for (int i = 0; i < polygons[polygons.size() - 1].size(); i++)
+			{
+				polygons[polygons.size() - 1][i].y_1 += 1;
+				polygons[polygons.size() - 1][i].y_2 += 1;
+			}
+		}
+		else if (key == 's')
+		{
+			for (int i = 0; i < polygons[polygons.size() - 1].size(); i++)
+			{
+				polygons[polygons.size() - 1][i].y_1 -= 1;
+				polygons[polygons.size() - 1][i].y_2 -= 1;
+			}
+		}
+		else if (key == 'q')
+		{
+			vector<vector<Line>> temp = polygons;
+			int x0 = polygons[polygons.size() - 1][0].x_1;
+			int y0 = polygons[polygons.size() - 1][0].y_1;
+
+			for (int i = 0; i < polygons[polygons.size() - 1].size(); i++)
+			{
+				polygons[polygons.size() - 1][i].x_1 = (temp[temp.size() - 1][i].x_1 - x0) * 0 - (temp[temp.size() - 1][i].y_1 - y0) * 1 + x0;
+				polygons[polygons.size() - 1][i].y_1 = (temp[temp.size() - 1][i].x_1 - x0) * 1 + (temp[temp.size() - 1][i].y_1 - y0) * 0 + y0;
+				polygons[polygons.size() - 1][i].x_2 = (temp[temp.size() - 1][i].x_2 - x0) * 0 - (temp[temp.size() - 1][i].y_2 - y0) * 1 + x0;
+				polygons[polygons.size() - 1][i].y_2 = (temp[temp.size() - 1][i].x_2 - x0) * 1 + (temp[temp.size() - 1][i].y_2 - y0) * 0 + y0;
+			}
+
+			for (int i = 0; i < temp.size(); i++)
+			{
+				temp[i].clear();
+			}
+			temp.clear();
+		}
+		else if (key == 'e')
+		{
+			vector<vector<Line>> temp = polygons;
+			int x0 = polygons[polygons.size() - 1][0].x_1;
+			int y0 = polygons[polygons.size() - 1][0].y_1;
+
+			for (int i = 0; i < polygons[polygons.size() - 1].size(); i++)
+			{
+				polygons[polygons.size() - 1][i].x_1 = (temp[temp.size() - 1][i].x_1 - x0) * 0 - (temp[temp.size() - 1][i].y_1 - y0) * (-1) + x0;
+				polygons[polygons.size() - 1][i].y_1 = (temp[temp.size() - 1][i].x_1 - x0) * (-1) + (temp[temp.size() - 1][i].y_1 - y0) * 0 + y0;
+				polygons[polygons.size() - 1][i].x_2 = (temp[temp.size() - 1][i].x_2 - x0) * 0 - (temp[temp.size() - 1][i].y_2 - y0) * (-1) + x0;
+				polygons[polygons.size() - 1][i].y_2 = (temp[temp.size() - 1][i].x_2 - x0) * (-1) + (temp[temp.size() - 1][i].y_2 - y0) * 0 + y0;
+			}
+
+			for (int i = 0; i < temp.size(); i++)
+			{
+				temp[i].clear();
+			}
+			temp.clear();
+		}
+		else if (key == 'z')
+		{
+			if (resizePolygon > 0)
+			{
+				for (int i = 0; i < polygons[polygons.size() - 1].size(); i++)
+				{
+					polygons[polygons.size() - 1][i].x_1 = polygons[polygons.size() - 1][i].x_1 / 2;
+					polygons[polygons.size() - 1][i].y_1 = polygons[polygons.size() - 1][i].y_1 / 2;
+					polygons[polygons.size() - 1][i].x_2 = polygons[polygons.size() - 1][i].x_2 / 2;
+					polygons[polygons.size() - 1][i].y_2 = polygons[polygons.size() - 1][i].y_2 / 2;
+				}
+				resizePolygon--;
+			}
+		}
+		else if (key == 'x')
+		{
+			for (int i = 0; i < polygons[polygons.size() - 1].size(); i++)
+			{
+				polygons[polygons.size() - 1][i].x_1 = polygons[polygons.size() - 1][i].x_1 * 2;
+				polygons[polygons.size() - 1][i].y_1 = polygons[polygons.size() - 1][i].y_1 * 2;
+				polygons[polygons.size() - 1][i].x_2 = polygons[polygons.size() - 1][i].x_2 * 2;
+				polygons[polygons.size() - 1][i].y_2 = polygons[polygons.size() - 1][i].y_2 * 2;
+			}
+			resizePolygon++;
+		}
+		break;
+	case FILLEDAREA_STATE5:
+		if (key == 'a')
+		{
+			for (int i = 0; i < filledAreas[filledAreas.size() - 1].size(); i++)
+			{
+				filledAreas[filledAreas.size() - 1][i].x_1 -= 1;
+				filledAreas[filledAreas.size() - 1][i].x_2 -= 1;
+			}
+		}
+		else if (key == 'd')
+		{
+			for (int i = 0; i < filledAreas[filledAreas.size() - 1].size(); i++)
+			{
+				filledAreas[filledAreas.size() - 1][i].x_1 += 1;
+				filledAreas[filledAreas.size() - 1][i].x_2 += 1;
+			}
+		}
+		else if (key == 'w')
+		{
+			for (int i = 0; i < filledAreas[filledAreas.size() - 1].size(); i++)
+			{
+				filledAreas[filledAreas.size() - 1][i].y_1 += 1;
+				filledAreas[filledAreas.size() - 1][i].y_2 += 1;
+			}
+		}
+		else if (key == 's')
+		{
+			for (int i = 0; i < filledAreas[filledAreas.size() - 1].size(); i++)
+			{
+				filledAreas[filledAreas.size() - 1][i].y_1 -= 1;
+				filledAreas[filledAreas.size() - 1][i].y_2 -= 1;
+			}
+		}
+		else if (key == 'q')
+		{
+			vector<vector<Line>> temp = filledAreas;
+			int x0 = filledAreas[filledAreas.size() - 1][0].x_1;
+			int y0 = filledAreas[filledAreas.size() - 1][0].y_1;
+
+			for (int i = 0; i < filledAreas[filledAreas.size() - 1].size(); i++)
+			{
+				filledAreas[filledAreas.size() - 1][i].x_1 = (temp[temp.size() - 1][i].x_1 - x0) * 0 - (temp[temp.size() - 1][i].y_1 - y0) * 1 + x0;
+				filledAreas[filledAreas.size() - 1][i].y_1 = (temp[temp.size() - 1][i].x_1 - x0) * 1 + (temp[temp.size() - 1][i].y_1 - y0) * 0 + y0;
+				filledAreas[filledAreas.size() - 1][i].x_2 = (temp[temp.size() - 1][i].x_2 - x0) * 0 - (temp[temp.size() - 1][i].y_2 - y0) * 1 + x0;
+				filledAreas[filledAreas.size() - 1][i].y_2 = (temp[temp.size() - 1][i].x_2 - x0) * 1 + (temp[temp.size() - 1][i].y_2 - y0) * 0 + y0;
+			}
+
+			for (int i = 0; i < temp.size(); i++)
+			{
+				temp[i].clear();
+			}
+			temp.clear();
+		}
+		else if (key == 'e')
+		{
+			vector<vector<Line>> temp = filledAreas;
+			int x0 = filledAreas[filledAreas.size() - 1][0].x_1;
+			int y0 = filledAreas[filledAreas.size() - 1][0].y_1;
+
+			for (int i = 0; i < filledAreas[filledAreas.size() - 1].size(); i++)
+			{
+				filledAreas[filledAreas.size() - 1][i].x_1 = (temp[temp.size() - 1][i].x_1 - x0) * 0 - (temp[temp.size() - 1][i].y_1 - y0) * (-1) + x0;
+				filledAreas[filledAreas.size() - 1][i].y_1 = (temp[temp.size() - 1][i].x_1 - x0) * (-1) + (temp[temp.size() - 1][i].y_1 - y0) * 0 + y0;
+				filledAreas[filledAreas.size() - 1][i].x_2 = (temp[temp.size() - 1][i].x_2 - x0) * 0 - (temp[temp.size() - 1][i].y_2 - y0) * (-1) + x0;
+				filledAreas[filledAreas.size() - 1][i].y_2 = (temp[temp.size() - 1][i].x_2 - x0) * (-1) + (temp[temp.size() - 1][i].y_2 - y0) * 0 + y0;
+			}
+
+			for (int i = 0; i < temp.size(); i++)
+			{
+				temp[i].clear();
+			}
+			temp.clear();
+		}
+		else if (key == 'z')
+		{
+			if (resizeFilledArea > 0)
+			{
+				for (int i = 0; i < filledAreas[filledAreas.size() - 1].size(); i++)
+				{
+					filledAreas[filledAreas.size() - 1][i].x_1 = filledAreas[filledAreas.size() - 1][i].x_1 / 2;
+					filledAreas[filledAreas.size() - 1][i].y_1 = filledAreas[filledAreas.size() - 1][i].y_1 / 2;
+					filledAreas[filledAreas.size() - 1][i].x_2 = filledAreas[filledAreas.size() - 1][i].x_2 / 2;
+					filledAreas[filledAreas.size() - 1][i].y_2 = filledAreas[filledAreas.size() - 1][i].y_2 / 2;
+				}
+				resizeFilledArea--;
+			}
+		}
+		else if (key == 'x')
+		{
+			for (int i = 0; i < filledAreas[filledAreas.size() - 1].size(); i++)
+			{
+				filledAreas[filledAreas.size() - 1][i].x_1 = filledAreas[filledAreas.size() - 1][i].x_1 * 2;
+				filledAreas[filledAreas.size() - 1][i].y_1 = filledAreas[filledAreas.size() - 1][i].y_1 * 2;
+				filledAreas[filledAreas.size() - 1][i].x_2 = filledAreas[filledAreas.size() - 1][i].x_2 * 2;
+				filledAreas[filledAreas.size() - 1][i].y_2 = filledAreas[filledAreas.size() - 1][i].y_2 * 2;
+			}
+			resizeFilledArea++;
+		}
+		break;
+	case ELLIPSE_STATE3:
+		if (key == 'a')
+		{
+			ellipses[ellipses.size() - 1].x -= 1;
+			for (int i = 0; i < 4; i++)
+			{
+				ellipseBounds[i].x_1 -= 1;
+				ellipseBounds[i].x_2 -= 1;
+			}
+		}
+		else if (key == 'd')
+		{
+			ellipses[ellipses.size() - 1].x += 1;
+			for (int i = 0; i < 4; i++)
+			{
+				ellipseBounds[i].x_1 += 1;
+				ellipseBounds[i].x_2 += 1;
+			}
+		}
+		else if (key == 'w')
+		{
+			ellipses[ellipses.size() - 1].y += 1;
+			for (int i = 0; i < 4; i++)
+			{
+				ellipseBounds[i].y_1 += 1;
+				ellipseBounds[i].y_2 += 1;
+			}
+		}
+		else if (key == 's')
+		{
+			ellipses[ellipses.size() - 1].y -= 1;
+			for (int i = 0; i < 4; i++)
+			{
+				ellipseBounds[i].y_1 -= 1;
+				ellipseBounds[i].y_2 -= 1;
+			}
+		}
+		else if (key == 'q')
+		{
+			int temp = ellipses[ellipses.size() - 1].x_half_length;
+			ellipses[ellipses.size() - 1].x_half_length = ellipses[ellipses.size() - 1].y_half_length;
+			ellipses[ellipses.size() - 1].y_half_length = temp;
+			//rotate the bounds		
+			int x01 = ellipseBounds[0].x_1;
+			int y01 = ellipseBounds[0].y_1;
+			int x02 = ellipseBounds[0].x_2;
+			int y02 = ellipseBounds[0].y_2;
+			int x11 = ellipseBounds[1].x_1;
+			int y11 = ellipseBounds[1].y_1;
+			int x12 = ellipseBounds[1].x_2;
+			int y12 = ellipseBounds[1].y_2;
+			int x21 = ellipseBounds[2].x_1;
+			int y21 = ellipseBounds[2].y_1;
+			int x22 = ellipseBounds[2].x_2;
+			int y22 = ellipseBounds[2].y_2;
+			int x31 = ellipseBounds[3].x_1;
+			int y31 = ellipseBounds[3].y_1;
+			int x32 = ellipseBounds[3].x_2;
+			int y32 = ellipseBounds[3].y_2;
+
+			int x0 = ellipses[ellipses.size() - 1].x;
+			int y0 = ellipses[ellipses.size() - 1].y;
+
+			ellipseBounds[0].x_1 = (x01 - x0) * 0 - (y01 - y0) * 1 + x0;
+			ellipseBounds[0].y_1 = (x01 - x0) * 1 + (y01 - y0) * 0 + y0;
+			ellipseBounds[0].x_2 = (x02 - x0) * 0 - (y02 - y0) * 1 + x0;
+			ellipseBounds[0].y_2 = (x02 - x0) * 1 + (y02 - y0) * 0 + y0;
+			ellipseBounds[1].x_1 = (x11 - x0) * 0 - (y11 - y0) * 1 + x0;
+			ellipseBounds[1].y_1 = (x11 - x0) * 1 + (y11 - y0) * 0 + y0;
+			ellipseBounds[1].x_2 = (x12 - x0) * 0 - (y12 - y0) * 1 + x0;
+			ellipseBounds[1].y_2 = (x12 - x0) * 1 + (y12 - y0) * 0 + y0;
+			ellipseBounds[2].x_1 = (x21 - x0) * 0 - (y21 - y0) * 1 + x0;
+			ellipseBounds[2].y_1 = (x21 - x0) * 1 + (y21 - y0) * 0 + y0;
+			ellipseBounds[2].x_2 = (x22 - x0) * 0 - (y22 - y0) * 1 + x0;
+			ellipseBounds[2].y_2 = (x22 - x0) * 1 + (y22 - y0) * 0 + y0;
+			ellipseBounds[3].x_1 = (x31 - x0) * 0 - (y31 - y0) * 1 + x0;
+			ellipseBounds[3].y_1 = (x31 - x0) * 1 + (y31 - y0) * 0 + y0;
+			ellipseBounds[3].x_2 = (x32 - x0) * 0 - (y32 - y0) * 1 + x0;
+			ellipseBounds[3].y_2 = (x32 - x0) * 1 + (y32 - y0) * 0 + y0;
+		}
+		else if (key == 'e')
+		{
+			int temp = ellipses[ellipses.size() - 1].x_half_length;
+			ellipses[ellipses.size() - 1].x_half_length = ellipses[ellipses.size() - 1].y_half_length;
+			ellipses[ellipses.size() - 1].y_half_length = temp;
+			//rotate the bounds
+			int x01 = ellipseBounds[0].x_1;
+			int y01 = ellipseBounds[0].y_1;
+			int x02 = ellipseBounds[0].x_2;
+			int y02 = ellipseBounds[0].y_2;
+			int x11 = ellipseBounds[1].x_1;
+			int y11 = ellipseBounds[1].y_1;
+			int x12 = ellipseBounds[1].x_2;
+			int y12 = ellipseBounds[1].y_2;
+			int x21 = ellipseBounds[2].x_1;
+			int y21 = ellipseBounds[2].y_1;
+			int x22 = ellipseBounds[2].x_2;
+			int y22 = ellipseBounds[2].y_2;
+			int x31 = ellipseBounds[3].x_1;
+			int y31 = ellipseBounds[3].y_1;
+			int x32 = ellipseBounds[3].x_2;
+			int y32 = ellipseBounds[3].y_2;
+
+			int x0 = ellipses[ellipses.size() - 1].x;
+			int y0 = ellipses[ellipses.size() - 1].y;
+
+			ellipseBounds[0].x_1 = (x01 - x0) * 0 - (y01 - y0) * (-1) + x0;
+			ellipseBounds[0].y_1 = (x01 - x0) * (-1) + (y01 - y0) * 0 + y0;
+			ellipseBounds[0].x_2 = (x02 - x0) * 0 - (y02 - y0) * (-1) + x0;
+			ellipseBounds[0].y_2 = (x02 - x0) * (-1) + (y02 - y0) * 0 + y0;
+			ellipseBounds[1].x_1 = (x11 - x0) * 0 - (y11 - y0) * (-1) + x0;
+			ellipseBounds[1].y_1 = (x11 - x0) * (-1) + (y11 - y0) * 0 + y0;
+			ellipseBounds[1].x_2 = (x12 - x0) * 0 - (y12 - y0) * (-1) + x0;
+			ellipseBounds[1].y_2 = (x12 - x0) * (-1) + (y12 - y0) * 0 + y0;
+			ellipseBounds[2].x_1 = (x21 - x0) * 0 - (y21 - y0) * (-1) + x0;
+			ellipseBounds[2].y_1 = (x21 - x0) * (-1) + (y21 - y0) * 0 + y0;
+			ellipseBounds[2].x_2 = (x22 - x0) * 0 - (y22 - y0) * (-1) + x0;
+			ellipseBounds[2].y_2 = (x22 - x0) * (-1) + (y22 - y0) * 0 + y0;
+			ellipseBounds[3].x_1 = (x31 - x0) * 0 - (y31 - y0) * (-1) + x0;
+			ellipseBounds[3].y_1 = (x31 - x0) * (-1) + (y31 - y0) * 0 + y0;
+			ellipseBounds[3].x_2 = (x32 - x0) * 0 - (y32 - y0) * (-1) + x0;
+			ellipseBounds[3].y_2 = (x32 - x0) * (-1) + (y32 - y0) * 0 + y0;
+		}
+		else if (key == 'z')
+		{
+			if (resizeEllipse > 0)
+			{
+				ellipses[ellipses.size() - 1].x_half_length = ellipses[ellipses.size() - 1].x_half_length / 2;
+				ellipses[ellipses.size() - 1].y_half_length = ellipses[ellipses.size() - 1].y_half_length / 2;
+				for (int i = 0; i < 4; i++)
+				{
+					ellipseBounds[i].x_1 = (ellipseBounds[i].x_1 - ellipses[ellipses.size() - 1].x) / 2 + ellipses[ellipses.size() - 1].x;
+					ellipseBounds[i].y_1 = (ellipseBounds[i].y_1 - ellipses[ellipses.size() - 1].y) / 2 + ellipses[ellipses.size() - 1].y;
+					ellipseBounds[i].x_2 = (ellipseBounds[i].x_2 - ellipses[ellipses.size() - 1].x) / 2 + ellipses[ellipses.size() - 1].x;
+					ellipseBounds[i].y_2 = (ellipseBounds[i].y_2 - ellipses[ellipses.size() - 1].y) / 2 + ellipses[ellipses.size() - 1].y;
+				}
+				resizeEllipse--;
+			}
+		}
+		else if (key == 'x')
+		{
+			if (resizeEllipse < 1) //Although we have this limit, something strange will still happen when the ellipse is large to some degree.
+			{
+				ellipses[ellipses.size() - 1].x_half_length = ellipses[ellipses.size() - 1].x_half_length * 2;
+				ellipses[ellipses.size() - 1].y_half_length = ellipses[ellipses.size() - 1].y_half_length * 2;
+				for (int i = 0; i < 4; i++)
+				{
+					ellipseBounds[i].x_1 = (ellipseBounds[i].x_1 - ellipses[ellipses.size() - 1].x) * 2 + ellipses[ellipses.size() - 1].x;
+					ellipseBounds[i].y_1 = (ellipseBounds[i].y_1 - ellipses[ellipses.size() - 1].y) * 2 + ellipses[ellipses.size() - 1].y;
+					ellipseBounds[i].x_2 = (ellipseBounds[i].x_2 - ellipses[ellipses.size() - 1].x) * 2 + ellipses[ellipses.size() - 1].x;
+					ellipseBounds[i].y_2 = (ellipseBounds[i].y_2 - ellipses[ellipses.size() - 1].y) * 2 + ellipses[ellipses.size() - 1].y;
+				}
+				resizeEllipse++;
+			}
+		}
+		break;
+	case CIRCLE_STATE3:
+		if (key == 'a')
+		{
+			circles[circles.size() - 1].x -= 1;
+			for (int i = 0; i < 4; i++)
+			{
+				circleBounds[i].x_1 -= 1;
+				circleBounds[i].x_2 -= 1;
+			}
+		}
+		else if (key == 'd')
+		{
+			circles[circles.size() - 1].x += 1;
+			for (int i = 0; i < 4; i++)
+			{
+				circleBounds[i].x_1 += 1;
+				circleBounds[i].x_2 += 1;
+			}
+		}
+		else if (key == 'w')
+		{
+			circles[circles.size() - 1].y += 1;
+			for (int i = 0; i < 4; i++)
+			{
+				circleBounds[i].y_1 += 1;
+				circleBounds[i].y_2 += 1;
+			}
+		}
+		else if (key == 's')
+		{
+			circles[circles.size() - 1].y -= 1;
+			for (int i = 0; i < 4; i++)
+			{
+				circleBounds[i].y_1 -= 1;
+				circleBounds[i].y_2 -= 1;
+			}
+		}
+		else if (key == 'q')
+		{
+			;//nothing needs doing to rotate circles
+		}
+		else if (key == 'e')
+		{
+			;//nothing needs doing to rotate circles
+		}
+		else if (key == 'z')
+		{
+			if (resizeCircle > 0)
+			{
+				circles[circles.size() - 1].r = circles[circles.size() - 1].r / 2;
+				for (int i = 0; i < 4; i++)
+				{
+					circleBounds[i].x_1 = (circleBounds[i].x_1 - circles[circles.size() - 1].x) / 2 + circles[circles.size() - 1].x;
+					circleBounds[i].y_1 = (circleBounds[i].y_1 - circles[circles.size() - 1].y) / 2 + circles[circles.size() - 1].y;
+					circleBounds[i].x_2 = (circleBounds[i].x_2 - circles[circles.size() - 1].x) / 2 + circles[circles.size() - 1].x;
+					circleBounds[i].y_2 = (circleBounds[i].y_2 - circles[circles.size() - 1].y) / 2 + circles[circles.size() - 1].y;
+				}
+				resizeCircle--;
+			}
+		}
+		else if (key == 'x')
+		{
+			if (resizeCircle < 1)
+			{
+				circles[circles.size() - 1].r = circles[circles.size() - 1].r * 2;
+				for (int i = 0; i < 4; i++)
+				{
+					circleBounds[i].x_1 = (circleBounds[i].x_1 - circles[circles.size() - 1].x) * 2 + circles[circles.size() - 1].x;
+					circleBounds[i].y_1 = (circleBounds[i].y_1 - circles[circles.size() - 1].y) * 2 + circles[circles.size() - 1].y;
+					circleBounds[i].x_2 = (circleBounds[i].x_2 - circles[circles.size() - 1].x) * 2 + circles[circles.size() - 1].x;
+					circleBounds[i].y_2 = (circleBounds[i].y_2 - circles[circles.size() - 1].y) * 2 + circles[circles.size() - 1].y;
+				}
+				resizeCircle++;
+			}
+		}
+		break;
+	default: break;
+	}
+	glutPostRedisplay();
+}
+
 void mainMenuProc(int option) {
 	switch (option) {
 	case LINE:
@@ -1532,6 +2092,7 @@ int main(int argc, char **argv) {
 	glutMouseFunc(mouseButton);
 	glutMotionFunc(myMotion);
 	glutPassiveMotionFunc(myPassiveMotion);
+	glutKeyboardFunc(processNormalKeys);
 
 	// init Menus
 	createPopupMenus();
