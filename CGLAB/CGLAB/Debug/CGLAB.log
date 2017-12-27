@@ -1,42 +1,45 @@
-﻿生成启动时间为 2017/11/29 21:19:25。
+﻿生成启动时间为 2017/12/27 21:53:11。
      1>项目“C:\Users\asus\Desktop\DirOfDirs\Study\计算机图形学\LAB\CGLAB\CGLAB\CGLAB.vcxproj”在节点 2 上(Build 个目标)。
      1>ClCompile:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _LIB /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt CGLAB.cpp
          CGLAB.cpp
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(409): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(435): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(503): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(555): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(562): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(564): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(571): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(573): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(594): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(609): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(796): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(801): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1164): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1169): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1605): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1613): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1621): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1629): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1641): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1649): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1661): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1669): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1679): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1691): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1704): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1712): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1720): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1728): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1740): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1748): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1760): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1768): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1778): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1790): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(417): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(443): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(511): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(579): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(659): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(748): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(802): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(809): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(811): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(818): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(820): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(841): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(856): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1052): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1057): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1524): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(1529): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(2081): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(2089): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(2097): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(2105): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(2117): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(2125): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(2137): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(2145): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(2155): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(2167): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(2180): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(2188): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(2196): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(2204): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(2216): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(2224): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(2236): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(2244): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(2254): warning C4018: “<”: 有符号/无符号不匹配
+     1>c:\users\asus\desktop\dirofdirs\study\计算机图形学\lab\cglab\cglab\cglab.cpp(2266): warning C4018: “<”: 有符号/无符号不匹配
        Link:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\asus\Desktop\DirOfDirs\Study\计算机图形学\LAB\CGLAB\Debug\CGLAB.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\asus\Desktop\DirOfDirs\Study\计算机图形学\LAB\CGLAB\Debug\CGLAB.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\asus\Desktop\DirOfDirs\Study\计算机图形学\LAB\CGLAB\Debug\CGLAB.lib" /MACHINE:X86 Debug\CGLAB.obj
          CGLAB.vcxproj -> C:\Users\asus\Desktop\DirOfDirs\Study\计算机图形学\LAB\CGLAB\Debug\CGLAB.exe
@@ -44,4 +47,4 @@
 
 生成成功。
 
-已用时间 00:00:10.24
+已用时间 00:00:03.63

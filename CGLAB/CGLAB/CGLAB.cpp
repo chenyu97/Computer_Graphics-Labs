@@ -39,6 +39,12 @@ using namespace std;
 #define FILLEDAREA_STATE3 503
 #define FILLEDAREA_STATE4 504
 #define FILLEDAREA_STATE5 505
+#define POLYGON_STATE_CUT1 601
+#define POLYGON_STATE_CUT2 602
+#define POLYGON_STATE_CUT3 603
+#define POLYGON_STATE_CUT4 604
+#define POLYGON_STATE_CUT5 605
+#define POLYGON_STATE_CUT6 606
 
 int system_state = 0;
 float CurrentWidth = InitialWidth;
@@ -74,7 +80,7 @@ struct Ellipse
 	int y_half_length;
 };
 
-struct  Circle
+struct Circle
 {
 	int x;
 	int y;
@@ -104,6 +110,8 @@ vector<vector<Line>> filledAreas;
 
 Line circleBounds[4] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };  //to surround the current circle
 Line ellipseBounds[4] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };  //to surround the current ellipse
+Line cutBounds[4] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } }; //the cutting window
+
 
 void drawLines(int x_1, int y_1, int x_2, int y_2)
 {
@@ -512,6 +520,245 @@ void fillArea(vector<Line> p)
 	return;
 }
 
+bool isOutside(Line cutLine, floatPoint p)
+{
+	if (((p.y_1 - cutLine.y_1) * (cutLine.x_2 - cutLine.x_1) - (cutLine.y_2 - cutLine.y_1) * (p.x_1 - cutLine.x_1)) > 0)
+		return 1;
+	return 0;
+}
+
+void polygonCut()
+{
+	float xMin = cutBounds[0].x_1;
+	for (int i = 0; i < 4; i++)
+	{
+		if (cutBounds[i].x_1 < xMin)
+			xMin = cutBounds[i].x_1;
+		else if (cutBounds[i].x_2 < xMin)
+			xMin = cutBounds[i].x_2;
+	}
+
+	float xMax = cutBounds[0].x_1;
+	for (int i = 0; i < 4; i++)
+	{
+		if (cutBounds[i].x_1 > xMax)
+			xMax = cutBounds[i].x_1;
+		else if (cutBounds[i].x_2 > xMax)
+			xMax = cutBounds[i].x_2;
+	}
+
+	float yMin = cutBounds[0].y_1;
+	for (int i = 0; i < 4; i++)
+	{
+		if (cutBounds[i].y_1 < yMin)
+			yMin = cutBounds[i].y_1;
+		else if (cutBounds[i].y_2 < yMin)
+			yMin = cutBounds[i].y_2;
+	}
+
+	float yMax = cutBounds[0].y_1;
+	for (int i = 0; i < 4; i++)
+	{
+		if (cutBounds[i].y_1 > yMax)
+			yMax = cutBounds[i].y_1;
+		else if (cutBounds[i].y_2 > yMax)
+			yMax = cutBounds[i].y_2;
+	}
+
+	Line cutWindowBounds[4] = { { xMin, yMin, xMin, yMax }, { xMin, yMax, xMax, yMax }, { xMax, yMax, xMax, yMin }, { xMax, yMin, xMin, yMin } };
+
+	floatPoint peStart, peStop;	//polygon edge Start/Stop
+	floatPoint cweStart, cweStop;	//cutting window edge Start/Stop
+	bool lpii = 0;	//last point is inside
+
+	cweStart.x_1 = xMax;
+	cweStart.y_1 = yMin;
+
+	vector<floatPoint> newPoints;
+	vector<floatPoint> tempPolygon;
+	for (int i = 0; i < polygons[polygons.size() - 1].size(); i++)
+	{
+		floatPoint tp;
+		tp.x_1 = polygons[polygons.size() - 1][i].x_1;
+		tp.y_1 = polygons[polygons.size() - 1][i].y_1;
+		tempPolygon.push_back(tp);
+	}
+
+	for (int i = 0; i < 4; i++)
+	{
+		if (i == 0)
+		{
+			cweStop.x_1 = xMin;
+			cweStop.y_1 = yMin;
+		}
+		else if (i == 1)
+		{
+			cweStop.x_1 = xMin;
+			cweStop.y_1 = yMax;
+		}
+		else if (i == 2)
+		{
+			cweStop.x_1 = xMax;
+			cweStop.y_1 = yMax;
+		}
+		else if (i == 3)
+		{
+			cweStop.x_1 = xMax;
+			cweStop.y_1 = yMin;
+		}
+
+		if (tempPolygon.size() == 0)
+		{
+			polygons.erase(polygons.end() - 1);
+			return;
+		}
+		else if (tempPolygon.size() == 1)
+		{
+			if (i == 0)
+			{
+				if (tempPolygon[0].y_1 < yMin)
+					return;
+				else
+					newPoints.push_back(tempPolygon[0]);
+			}
+			else if (i == 1)
+			{
+				if (tempPolygon[0].x_1 < xMin)
+					return;
+				else
+					newPoints.push_back(tempPolygon[0]);
+			}
+			else if (i == 2)
+			{
+				if (tempPolygon[0].y_1 > yMax)
+					return;
+				else
+					newPoints.push_back(tempPolygon[0]);
+			}
+			else if (i == 3)
+			{
+				if (tempPolygon[0].x_1 > xMax)
+					return;
+				else
+					newPoints.push_back(tempPolygon[0]);
+			}
+		}
+		else
+		{
+			peStart.x_1 = tempPolygon[tempPolygon.size() - 1].x_1;
+			peStart.y_1 = tempPolygon[tempPolygon.size() - 1].y_1;
+
+			Line lineTemp;
+			lineTemp.x_1 = cweStart.x_1;
+			lineTemp.y_1 = cweStart.y_1;
+			lineTemp.x_2 = cweStop.x_1;
+			lineTemp.y_2 = cweStop.y_1;
+			lpii = !(isOutside(lineTemp, peStart));
+			cout << lpii << endl;
+
+			for (int j = 0; j < tempPolygon.size(); j++)
+			{
+				peStop.x_1 = tempPolygon[j].x_1;
+				peStop.y_1 = tempPolygon[j].y_1;
+
+				lineTemp.x_1 = cweStart.x_1;
+				lineTemp.y_1 = cweStart.y_1;
+				lineTemp.x_2 = cweStop.x_1;
+				lineTemp.y_2 = cweStop.y_1;
+				cout << !(isOutside(lineTemp, peStop)) << endl;
+				if (!(isOutside(lineTemp, peStop)))
+				{
+					if (!lpii)
+					{
+						lpii = 1;
+						//calculate the new point
+						floatPoint newPoint;
+						if (i == 0)
+						{
+							newPoint.y_1 = yMin;
+							newPoint.x_1 = peStart.x_1 + (newPoint.y_1 - peStart.y_1) * (peStop.x_1 - peStart.x_1) / (peStop.y_1 - peStart.y_1);
+						}
+						else if (i == 1)
+						{
+							newPoint.x_1 = xMin;
+							newPoint.y_1 = (newPoint.x_1 - peStart.x_1) * (peStop.y_1 - peStart.y_1) / (peStop.x_1 - peStart.x_1) + peStart.y_1;
+						}
+						else if (i == 2)
+						{
+							newPoint.y_1 = yMax;
+							newPoint.x_1 = peStart.x_1 + (newPoint.y_1 - peStart.y_1) * (peStop.x_1 - peStart.x_1) / (peStop.y_1 - peStart.y_1);
+
+						}
+						else if (i == 3)
+						{
+							newPoint.x_1 = xMax;
+							newPoint.y_1 = (newPoint.x_1 - peStart.x_1) * (peStop.y_1 - peStart.y_1) / (peStop.x_1 - peStart.x_1) + peStart.y_1;
+						}
+						newPoints.push_back(newPoint);
+					}
+					newPoints.push_back(peStop);
+				}
+				else
+				{
+					if (lpii)
+					{
+						lpii = 0;
+
+						floatPoint newPoint;
+						if (i == 0)
+						{
+							newPoint.y_1 = yMin;
+							newPoint.x_1 = peStart.x_1 + (newPoint.y_1 - peStart.y_1) * (peStop.x_1 - peStart.x_1) / (peStop.y_1 - peStart.y_1);
+						}
+						else if (i == 1)
+						{
+							newPoint.x_1 = xMin;
+							newPoint.y_1 = (newPoint.x_1 - peStart.x_1) * (peStop.y_1 - peStart.y_1) / (peStop.x_1 - peStart.x_1) + peStart.y_1;
+						}
+						else if (i == 2)
+						{
+							newPoint.y_1 = yMax;
+							newPoint.x_1 = peStart.x_1 + (newPoint.y_1 - peStart.y_1) * (peStop.x_1 - peStart.x_1) / (peStop.y_1 - peStart.y_1);
+
+						}
+						else if (i == 3)
+						{
+							newPoint.x_1 = xMax;
+							newPoint.y_1 = (newPoint.x_1 - peStart.x_1) * (peStop.y_1 - peStart.y_1) / (peStop.x_1 - peStart.x_1) + peStart.y_1;
+						}
+						newPoints.push_back(newPoint);
+					}
+				}
+				peStart.x_1 = peStop.x_1;
+				peStart.y_1 = peStop.y_1;
+			}
+		}
+		cweStart.x_1 = cweStop.x_1;
+		cweStart.y_1 = cweStop.y_1;
+		tempPolygon.swap(newPoints);
+		newPoints.clear();
+	}
+
+	if (tempPolygon.size() == 0)
+		polygons.erase(polygons.end() - 1);
+	else
+	{
+		polygons.erase(polygons.end() - 1);
+		vector<Line> polygonAdd;
+		for (int i = 0; i < tempPolygon.size(); i++)
+		{
+			Line lineAdd;
+			lineAdd.x_1 = tempPolygon[i].x_1;
+			lineAdd.y_1 = tempPolygon[i].y_1;
+			lineAdd.x_2 = tempPolygon[(i + 1) % (tempPolygon.size())].x_1;
+			lineAdd.y_2 = tempPolygon[(i + 1) % (tempPolygon.size())].y_1;
+			polygonAdd.push_back(lineAdd);
+		}
+		polygons.push_back(polygonAdd);
+	}
+	return;
+}
+
 void InitEnvironment()
 {
 	glClearColor(1, 1, 1, 0);
@@ -609,6 +856,15 @@ void renderScene(void) {
 	for (int i = 0; i < ellipses.size(); i++)
 	{
 		drawEllipse(ellipses[i]);
+	}
+
+	//draw cutBounds
+	if (((system_state / 100) == 6) && (system_state != POLYGON_STATE_CUT1))
+	{
+		for (int i = 0; i < 4; i++)
+		{
+			drawLines(cutBounds[i].x_1, cutBounds[i].y_1, cutBounds[i].x_2, cutBounds[i].y_2);
+		}
 	}
 
 	glFlush();
@@ -827,6 +1083,110 @@ void mouseButton(int button, int state, int x, int y)
 					edit_polygon_point = -1;
 					system_state = POLYGON_STATE1;
 				}
+			}
+		}
+		break;
+	case POLYGON_STATE_CUT1:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_DOWN)
+			{
+				left_button_down = 1;
+
+				cutBounds[0].x_1 = x;
+				cutBounds[0].y_1 = CurrentHeight - y;
+				cutBounds[0].x_2 = x;
+				cutBounds[0].y_2 = CurrentHeight - y;  //no use
+
+				cutBounds[1].x_1 = x;
+				cutBounds[1].y_1 = CurrentHeight - y;  //no use
+				cutBounds[1].x_2 = x;  //no use
+				cutBounds[1].y_2 = CurrentHeight - y;  //no use
+
+				cutBounds[2].x_1 = x;  //no use
+				cutBounds[2].y_1 = CurrentHeight - y;  //no use
+				cutBounds[2].x_2 = x;  //no use
+				cutBounds[2].y_2 = CurrentHeight - y;
+
+				cutBounds[3].x_1 = x;  //no use
+				cutBounds[3].y_1 = CurrentHeight - y;
+				cutBounds[3].x_2 = x;
+				cutBounds[3].y_2 = CurrentHeight - y;
+
+				system_state = POLYGON_STATE_CUT2;
+				glutPostRedisplay();
+			}
+			else if (state == GLUT_UP)
+			{
+				left_button_down = 0;
+			}
+		}
+		break;
+	case POLYGON_STATE_CUT2:  //ready to edit point 2	
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{
+				left_button_down = 0;
+				system_state = POLYGON_STATE_CUT3;
+			}
+		}
+		break;
+	case POLYGON_STATE_CUT3:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_DOWN)
+			{
+				if ((abs(x - cutBounds[2].x_1) < 10) && (abs(CurrentHeight - y - cutBounds[2].y_1) < 10))
+				{
+					left_button_down = 1;
+					system_state = POLYGON_STATE_CUT2;
+				}
+				else if ((abs(x - cutBounds[0].x_1) < 10) && (abs(CurrentHeight - y - cutBounds[0].y_1) < 10))
+				{
+					left_button_down = 1;
+					system_state = POLYGON_STATE_CUT4;
+				}
+				else if ((abs(x - cutBounds[1].x_1) < 10) && (abs(CurrentHeight - y - cutBounds[1].y_1) < 10))
+				{
+					left_button_down = 1;
+					system_state = POLYGON_STATE_CUT5;
+				}
+				else if ((abs(x - cutBounds[3].x_1) < 10) && (abs(CurrentHeight - y - cutBounds[3].y_1) < 10))
+				{
+					left_button_down = 1;
+					system_state = POLYGON_STATE_CUT6;
+				}
+			}
+		}
+		break;
+	case POLYGON_STATE_CUT4:  //ready to edit point 0
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{
+				left_button_down = 0;
+				system_state = POLYGON_STATE_CUT3;
+			}
+		}
+		break;
+	case POLYGON_STATE_CUT5:  //ready to edit point 1
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{
+				left_button_down = 0;
+				system_state = POLYGON_STATE_CUT3;
+			}
+		}
+		break;
+	case POLYGON_STATE_CUT6:  //ready to edit point 3
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{
+				left_button_down = 0;
+				system_state = POLYGON_STATE_CUT3;
 			}
 		}
 		break;
@@ -1265,6 +1625,107 @@ void myMotion(int x, int y)
 			filledAreas[filledAreas.size() - 1][edit_filledArea_point].y_1 = CurrentHeight - y;
 		}
 	}
+	else if (system_state == POLYGON_STATE_CUT2)
+	{
+		if (left_button_down == 1)
+		{
+			//			cutBounds[0].x_1 = x;
+			//			cutBounds[0].y_1 = CurrentHeight - y;
+			//			cutBounds[0].x_2 = x;
+			cutBounds[0].y_2 = CurrentHeight - y;
+
+			//			cutBounds[1].x_1 = x;
+			cutBounds[1].y_1 = CurrentHeight - y;
+			cutBounds[1].x_2 = x;
+			cutBounds[1].y_2 = CurrentHeight - y;
+
+			cutBounds[2].x_1 = x;
+			cutBounds[2].y_1 = CurrentHeight - y;
+			cutBounds[2].x_2 = x;
+			//			cutBounds[2].y_2 = CurrentHeight - y;
+
+			cutBounds[3].x_1 = x;
+			//			cutBounds[3].y_1 = CurrentHeight - y;
+			//			cutBounds[3].x_2 = x;
+			//			cutBounds[3].y_2 = CurrentHeight - y;
+		}
+	}
+	else if (system_state == POLYGON_STATE_CUT4)
+	{
+		if (left_button_down == 1)
+		{
+			cutBounds[0].x_1 = x;
+			cutBounds[0].y_1 = CurrentHeight - y;
+			cutBounds[0].x_2 = x;
+			//			cutBounds[0].y_2 = CurrentHeight - y;
+
+			cutBounds[1].x_1 = x;
+			//      	cutBounds[1].y_1 = CurrentHeight - y;
+			//			cutBounds[1].x_2 = x;
+			//			cutBounds[1].y_2 = CurrentHeight - y;
+
+			//			cutBounds[2].x_1 = x;
+			//			cutBounds[2].y_1 = CurrentHeight - y;
+			//			cutBounds[2].x_2 = x;
+			cutBounds[2].y_2 = CurrentHeight - y;
+
+			//			cutBounds[3].x_1 = x;
+			cutBounds[3].y_1 = CurrentHeight - y;
+			cutBounds[3].x_2 = x;
+			cutBounds[3].y_2 = CurrentHeight - y;
+		}
+	}
+	else if (system_state == POLYGON_STATE_CUT5)
+	{
+		if (left_button_down == 1)
+		{
+			cutBounds[0].x_1 = x;
+			//			cutBounds[0].y_1 = CurrentHeight - y;
+			cutBounds[0].x_2 = x;
+			cutBounds[0].y_2 = CurrentHeight - y;
+
+			cutBounds[1].x_1 = x;
+			cutBounds[1].y_1 = CurrentHeight - y;
+			//			cutBounds[1].x_2 = x;
+			cutBounds[1].y_2 = CurrentHeight - y;
+
+			//			cutBounds[2].x_1 = x;
+			cutBounds[2].y_1 = CurrentHeight - y;
+			//			cutBounds[2].x_2 = x;
+			//			cutBounds[2].y_2 = CurrentHeight - y;
+
+			//			cutBounds[3].x_1 = x;
+			//			cutBounds[3].y_1 = CurrentHeight - y;
+			cutBounds[3].x_2 = x;
+			//			cutBounds[3].y_2 = CurrentHeight - y;
+
+		}
+	}
+	else if (system_state == POLYGON_STATE_CUT6)
+	{
+		if (left_button_down == 1)
+		{
+			//			cutBounds[0].x_1 = x;
+			cutBounds[0].y_1 = CurrentHeight - y;
+			//			cutBounds[0].x_2 = x;
+			//			cutBounds[0].y_2 = CurrentHeight - y;
+
+			//			cutBounds[1].x_1 = x;
+			//			cutBounds[1].y_1 = CurrentHeight - y;
+			cutBounds[1].x_2 = x;
+			//			cutBounds[1].y_2 = CurrentHeight - y;
+
+			cutBounds[2].x_1 = x;
+			//			cutBounds[2].y_1 = CurrentHeight - y;
+			cutBounds[2].x_2 = x;
+			cutBounds[2].y_2 = CurrentHeight - y;
+
+			cutBounds[3].x_1 = x;
+			cutBounds[3].y_1 = CurrentHeight - y;
+			//			cutBounds[3].x_2 = x;
+			cutBounds[3].y_2 = CurrentHeight - y;
+		}
+	}
 	else if (system_state == ELLIPSE_STATE2)
 	{
 		if (left_button_down == 1)
@@ -1599,8 +2060,23 @@ void processNormalKeys(unsigned char key, int x, int y)
 			resizeLine++;
 		}
 		break;
+	case POLYGON_STATE_CUT3:
+		if (key == 'c')
+		{
+			polygonCut();
+			resizePolygon = 0;
+			edit_polygon_point = -1;
+			system_state = POLYGON_STATE1;
+		}
+		break;
 	case POLYGON_STATE5:
-		if (key == 'a')
+		if (key == 'c')
+		{
+			resizePolygon = 0;
+			edit_polygon_point = -1;
+			system_state = POLYGON_STATE_CUT1;
+		}
+		else if (key == 'a')
 		{
 			for (int i = 0; i < polygons[polygons.size() - 1].size(); i++)
 			{
