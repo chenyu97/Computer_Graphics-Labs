@@ -1,11 +1,13 @@
 #include <iostream>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <cmath>
 #include <vector>
 #include <list>
 #include <GL/glut.h>
 using namespace std;
 
+#define BMP_Header_Length 54
 #define InitialWidth 320
 #define InitialHeight 320
 #define LINE 1
@@ -45,6 +47,17 @@ using namespace std;
 #define POLYGON_STATE_CUT4 604
 #define POLYGON_STATE_CUT5 605
 #define POLYGON_STATE_CUT6 606
+#define CURVE 7
+#define CURVE_STATE1 701
+#define CURVE_STATE2 702
+#define CURVE_STATE3 703
+#define CURVE_STATE4 704
+#define CURVE_STATE5 705
+#define CURVE_STATE6 706
+#define CURVE_STATE7 707
+#define CURVE_STATE8 708
+#define CURVE_STATE9 709
+#define CURVE_STATE10 710
 
 int system_state = 0;
 float CurrentWidth = InitialWidth;
@@ -54,10 +67,12 @@ int left_button_up = 0;
 int edit_line_point = -1;
 int edit_polygon_point = -1;
 int edit_filledArea_point = -1;
+int edit_curve_point = -1;
 int isFilledAreaEdit = 0;
 int isFilledAreaEnd = 0;
 int isCircleEdit = 0;
 int isEllipseEdit = 0;
+int isCurveDraw = 0;
 int resizeLine = 0;
 int resizePolygon = 0;
 int resizeFilledArea = 0;
@@ -99,6 +114,14 @@ struct floatPoint
 	float y_1;
 };
 
+struct Curve
+{
+	floatPoint p1;
+	floatPoint p2;
+	floatPoint p3;
+	floatPoint p4;
+};
+
 vector<list<Node>> ET;
 list<Node> AET;
 
@@ -107,11 +130,124 @@ vector<vector<Line>> polygons;
 vector<Ellipse> ellipses;
 vector<Circle> circles;
 vector<vector<Line>> filledAreas;
+vector<Curve> curves;
+
 
 Line circleBounds[4] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };  //to surround the current circle
 Line ellipseBounds[4] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };  //to surround the current ellipse
 Line cutBounds[4] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } }; //the cutting window
 
+static GLubyte BMP_Header[BMP_Header_Length] = {
+	0x42, //0  
+	0x4d, //1  
+	0x66, //2  
+	0x75, //3  
+	0x00, //4  
+	0x00, //5  
+	0x00, //6  
+	0x00, //7  
+	0x00, //8  
+	0x00, //9  
+	0x36, //a  
+	0x00, //b  
+	0x00, //c  
+	0x00, //d  
+	0x28, //e  
+	0x00,//f  
+	0x00, //0  
+	0x00, //1  
+	0x64, //2  
+	0x00, //3  
+	0x00, //4  
+	0x00, //5  
+	0x64, //6  
+	0x00, //7  
+	0x00, //8  
+	0x00, //9  
+	0x01, //a  
+	0x00, //b  
+	0x18, //c  
+	0x00, //d  
+	0x00, //e  
+	0x00,//f  
+	0x00, //0  
+	0x00, //1  
+	0x30, //2  
+	0x75//3  
+};
+
+void drawBezierCurve(Curve curve)
+{
+	glColor3f(0, 0, 0);
+	glBegin(GL_LINE_STRIP);
+	for (int i = 1; i <= 1000; i++)
+	{
+		GLfloat t = i / 1000.0;
+		GLfloat b0 = pow(1 - t, 3.0);
+		GLfloat b1 = 3.0 * t * pow(1 - t, 2.0);
+		GLfloat b2 = 3.0 * t * t * (1 - t);
+		GLfloat b3 = t * t * t;
+
+		GLfloat x = curve.p1.x_1 * b0 + curve.p2.x_1 * b1 + curve.p3.x_1 * b2 + curve.p4.x_1 * b3;
+		GLfloat y = curve.p1.y_1 * b0 + curve.p2.y_1 * b1 + curve.p3.y_1 * b2 + curve.p4.y_1 * b3;
+		glVertex2f(x, y);
+	}
+	glEnd();
+	return;
+}
+
+void grab()
+{
+	//	FILE*    pDummyFile;  //指向另一bmp文件，用于复制它的文件头和信息头数据
+	FILE*    pWritingFile;  //指向要保存截图的bmp文件
+	GLubyte* pPixelData;    //指向新的空的内存，用于保存截图bmp文件数据
+	//	GLubyte  BMP_Header[BMP_Header_Length];
+	GLint    i, j;
+	GLint    PixelDataLength;   //BMP文件数据总长度
+
+	// 计算像素数据的实际长度
+	i = CurrentWidth * 3;   // 得到每一行的像素数据长度
+	while (i % 4 != 0)      // 补充数据，直到i是的倍数
+		++i;
+	PixelDataLength = i * CurrentHeight;  //补齐后的总位数
+
+	// 分配内存和打开文件
+	pPixelData = (GLubyte*)malloc(PixelDataLength);
+	if (pPixelData == 0)
+		exit(0);
+
+	//	pDummyFile = fopen("bitmap1.bmp", "rb");//只读形式打开
+	//	if (pDummyFile == 0)
+	//		exit(0);
+
+	pWritingFile = fopen("grab.bmp", "wb"); //只写形式打开
+	if (pWritingFile == 0)
+		exit(0);
+
+	//把读入的bmp文件的文件头和信息头数据复制，并修改宽高数据
+	//	fread(BMP_Header, sizeof(BMP_Header), 1, pDummyFile);  //读取文件头和信息头，占据54字节
+	fwrite(BMP_Header, sizeof(BMP_Header), 1, pWritingFile);
+	fseek(pWritingFile, 0x0012, SEEK_SET); //移动到0X0012处，指向图像宽度所在内存
+	i = CurrentWidth;
+	j = CurrentHeight;
+	fwrite(&i, sizeof(i), 1, pWritingFile);
+	fwrite(&j, sizeof(j), 1, pWritingFile);
+
+	// 读取当前画板上图像的像素数据
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);  //设置4位对齐方式
+	glReadPixels(0, 0, CurrentWidth, CurrentHeight,
+		GL_BGR_EXT, GL_UNSIGNED_BYTE, pPixelData);
+
+	// 写入像素数据
+	fseek(pWritingFile, 0, SEEK_END);
+	//把完整的BMP文件数据写入pWritingFile
+	fwrite(pPixelData, PixelDataLength, 1, pWritingFile);
+
+	// 释放内存和关闭文件
+	//	fclose(pDummyFile);
+	fclose(pWritingFile);
+	free(pPixelData);
+}
 
 void drawLines(int x_1, int y_1, int x_2, int y_2)
 {
@@ -770,6 +906,7 @@ void InitEnvironment()
 
 	glViewport(0, 0, glutGet(GLUT_SCREEN_WIDTH) * 2, glutGet(GLUT_SCREEN_HEIGHT) * 2);
 	gluOrtho2D(0, glutGet(GLUT_SCREEN_WIDTH) * 2, 0, glutGet(GLUT_SCREEN_HEIGHT) * 2);
+//	gluPerspective(45.0f, (GLfloat)glutGet(GLUT_SCREEN_WIDTH)  / (GLfloat)glutGet(GLUT_SCREEN_HEIGHT) , 0.1f, 100.0f);
 
 	glMatrixMode(GL_MODELVIEW);
 }
@@ -794,7 +931,6 @@ void changeSize(int w, int h) {
 }
 
 void renderScene(void) {
-
 	glClearColor(1, 1, 1, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -811,6 +947,21 @@ void renderScene(void) {
 		for (int j = 0; j < polygons[i].size(); j++)
 		{
 			drawLines(polygons[i][j].x_1, polygons[i][j].y_1, polygons[i][j].x_2, polygons[i][j].y_2);
+		}
+	}
+
+	//draw curves
+	for (int i = 0; i < curves.size(); i++)
+	{
+		if (i == curves.size() - 1 && ((system_state / 100) == 7) && (system_state != CURVE_STATE1))
+		{
+			drawLines(curves[i].p1.x_1, curves[i].p1.y_1, curves[i].p2.x_1, curves[i].p2.y_1);
+			drawLines(curves[i].p2.x_1, curves[i].p2.y_1, curves[i].p3.x_1, curves[i].p3.y_1);
+			drawLines(curves[i].p3.x_1, curves[i].p3.y_1, curves[i].p4.x_1, curves[i].p4.y_1);
+		}
+		if(i != curves.size() - 1 || ((i == curves.size() - 1) && (isCurveDraw == 0)))
+		{
+			drawBezierCurve(curves[i]);
 		}
 	}
 
@@ -866,8 +1017,11 @@ void renderScene(void) {
 			drawLines(cutBounds[i].x_1, cutBounds[i].y_1, cutBounds[i].x_2, cutBounds[i].y_2);
 		}
 	}
+		
+	//	glFlush();
+	glutSwapBuffers();
+	grab();
 
-	glFlush();
 }
 
 void mouseButton(int button, int state, int x, int y)
@@ -951,6 +1105,7 @@ void mouseButton(int button, int state, int x, int y)
 				}
 			}
 		}
+		break;
 	case LINE_STATE4:
 		if (button == GLUT_LEFT_BUTTON)
 		{
@@ -961,6 +1116,185 @@ void mouseButton(int button, int state, int x, int y)
 			}
 		}
 		break;
+	case CURVE_STATE1:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_DOWN)
+			{
+				isCurveDraw = 1;
+				system_state = CURVE_STATE2;
+				left_button_down = 1;
+
+				Curve newCurve;
+				newCurve.p1.x_1 = x;
+				newCurve.p1.y_1 = CurrentHeight - y;
+				newCurve.p2.x_1 = x;
+				newCurve.p2.y_1 = CurrentHeight - y;
+				newCurve.p3.x_1 = x;
+				newCurve.p3.y_1 = CurrentHeight - y;
+				newCurve.p4.x_1 = x;
+				newCurve.p4.y_1 = CurrentHeight - y;
+				curves.push_back(newCurve);
+
+				glutPostRedisplay();
+			}
+		}
+		break;
+	case CURVE_STATE2:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{
+				left_button_up = 1;
+				left_button_down = 0;
+				system_state = CURVE_STATE3;
+			}
+		}
+		break;
+	case CURVE_STATE3:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_DOWN)
+			{
+				system_state = CURVE_STATE4;
+				left_button_down = 1;
+				left_button_up = 0;
+				
+				curves[curves.size() - 1].p2.x_1 = x;
+				curves[curves.size() - 1].p2.y_1 = CurrentHeight - y;
+				curves[curves.size() - 1].p3.x_1 = x;
+				curves[curves.size() - 1].p3.y_1 = CurrentHeight - y;
+				curves[curves.size() - 1].p4.x_1 = x;
+				curves[curves.size() - 1].p4.y_1 = CurrentHeight - y;
+
+				glutPostRedisplay();
+			}
+		}
+		break;
+	case CURVE_STATE4:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{
+				left_button_up = 1;
+				left_button_down = 0;
+				system_state = CURVE_STATE5;
+			}
+		}
+		break;
+	case CURVE_STATE5:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_DOWN)
+			{
+				system_state = CURVE_STATE6;
+				left_button_down = 1;
+				left_button_up = 0;
+
+				curves[curves.size() - 1].p3.x_1 = x;
+				curves[curves.size() - 1].p3.y_1 = CurrentHeight - y;
+				curves[curves.size() - 1].p4.x_1 = x;
+				curves[curves.size() - 1].p4.y_1 = CurrentHeight - y;
+
+				glutPostRedisplay();
+			}
+		}
+		break;
+	case CURVE_STATE6:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{
+				left_button_up = 1;
+				left_button_down = 0;
+				system_state = CURVE_STATE7;
+			}
+		}
+		break;
+	case CURVE_STATE7:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_DOWN)
+			{
+				system_state = CURVE_STATE8;
+				left_button_down = 1;
+				left_button_up = 0;
+
+				curves[curves.size() - 1].p4.x_1 = x;
+				curves[curves.size() - 1].p4.y_1 = CurrentHeight - y;
+
+				isCurveDraw = 0;
+
+				glutPostRedisplay();
+			}
+		}
+		break;
+	case CURVE_STATE8:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{	//start to edit
+				system_state = CURVE_STATE9;
+			}
+		}
+		break;
+	case CURVE_STATE9:
+		if (button == GLUT_LEFT_BUTTON)
+		{
+			if (state == GLUT_UP)
+			{
+				left_button_down = 0;
+			}
+			else if (state == GLUT_DOWN)
+			{	//to edit
+				if ((abs(x - curves[curves.size() - 1].p4.x_1) < 10) && (abs(CurrentHeight - y - curves[curves.size() - 1].p4.y_1) < 10))
+				{
+					left_button_down = 1;
+					edit_curve_point = 4;
+					system_state = CURVE_STATE9;
+				}
+				else if ((abs(x - curves[curves.size() - 1].p3.x_1) < 10) && (abs(CurrentHeight - y - curves[curves.size() - 1].p3.y_1) < 10))
+				{
+					left_button_down = 1;
+					edit_curve_point = 3;
+					system_state = CURVE_STATE9;
+				}
+				else if ((abs(x - curves[curves.size() - 1].p2.x_1) < 10) && (abs(CurrentHeight - y - curves[curves.size() - 1].p2.y_1) < 10))
+				{
+					left_button_down = 1;
+					edit_curve_point = 2;
+					system_state = CURVE_STATE9;
+				}
+				else if ((abs(x - curves[curves.size() - 1].p1.x_1) < 10) && (abs(CurrentHeight - y - curves[curves.size() - 1].p1.y_1) < 10))
+				{
+					left_button_down = 1;
+					edit_curve_point = 1;
+					system_state = CURVE_STATE9;
+				}
+				else
+				{	//start to draw the next polygon
+					/*					system_state = POLYGON_STATE2;
+					left_button_down = 1;
+
+					vector<Line> newPolygon;
+
+					Line newLine;
+					newLine.x_1 = x;
+					newLine.y_1 = CurrentHeight - y;
+					newLine.x_2 = x;
+					newLine.y_2 = CurrentHeight - y;
+
+					newPolygon.push_back(newLine);
+					polygons.push_back(newPolygon);
+
+					glutPostRedisplay();
+					*/
+					edit_curve_point = -1;
+					 
+					system_state = CURVE_STATE1;
+				}
+			}
+		}
 		break;
 	case POLYGON_STATE1:
 		if (button == GLUT_LEFT_BUTTON)
@@ -984,7 +1318,6 @@ void mouseButton(int button, int state, int x, int y)
 				polygons.push_back(newPolygon);
 
 				glutPostRedisplay();
-
 			}
 		}
 		break;
@@ -1573,6 +1906,63 @@ void myMotion(int x, int y)
 			}
 		}
 	}
+	else if (system_state == CURVE_STATE2)
+	{
+		if (left_button_down == 1)
+		{
+			curves[curves.size() - 1].p2.x_1 = x;
+			curves[curves.size() - 1].p2.y_1 = CurrentHeight - y;
+			curves[curves.size() - 1].p3.x_1 = x;
+			curves[curves.size() - 1].p3.y_1 = CurrentHeight - y;
+			curves[curves.size() - 1].p4.x_1 = x;
+			curves[curves.size() - 1].p4.y_1 = CurrentHeight - y;
+		}
+	}
+	else if (system_state == CURVE_STATE4)
+	{
+		if (left_button_down == 1)
+		{
+			curves[curves.size() - 1].p3.x_1 = x;
+			curves[curves.size() - 1].p3.y_1 = CurrentHeight - y;
+			curves[curves.size() - 1].p4.x_1 = x;
+			curves[curves.size() - 1].p4.y_1 = CurrentHeight - y;
+		}
+	}
+	else if (system_state == CURVE_STATE6)
+	{
+		if (left_button_down == 1)
+		{
+			curves[curves.size() - 1].p4.x_1 = x;
+			curves[curves.size() - 1].p4.y_1 = CurrentHeight - y;
+		}
+	}
+	else if (system_state == CURVE_STATE9)
+	{
+		if (left_button_down == 1)
+		{	//drag one vertex of the control points of the curve
+			if (edit_curve_point == 1)
+			{
+				curves[curves.size() - 1].p1.x_1 = x;
+				curves[curves.size() - 1].p1.y_1 = CurrentHeight - y;
+			}
+			else if (edit_curve_point == 2)
+			{
+				curves[curves.size() - 1].p2.x_1 = x;
+				curves[curves.size() - 1].p2.y_1 = CurrentHeight - y;
+			}
+			else if (edit_curve_point == 3)
+			{
+				curves[curves.size() - 1].p3.x_1 = x;
+				curves[curves.size() - 1].p3.y_1 = CurrentHeight - y;
+			}
+			else if (edit_curve_point == 4)
+			{
+				curves[curves.size() - 1].p4.x_1 = x;
+				curves[curves.size() - 1].p4.y_1 = CurrentHeight - y;
+			}
+		
+		}
+	}
 	else if ((system_state == POLYGON_STATE1) || (system_state == POLYGON_STATE2) || (system_state == POLYGON_STATE3))
 	{
 		if (left_button_down == 1)
@@ -1983,6 +2373,36 @@ void myPassiveMotion(int x, int y)
 			polygons[polygons.size() - 1][polygons[polygons.size() - 1].size() - 1].y_2 = CurrentHeight - y;
 		}
 	}
+	else if (system_state == CURVE_STATE3)
+	{	
+		if (left_button_up == 1)
+		{
+			curves[curves.size() - 1].p2.x_1 = x;
+			curves[curves.size() - 1].p2.y_1 = CurrentHeight - y;
+			curves[curves.size() - 1].p3.x_1 = x;
+			curves[curves.size() - 1].p3.y_1 = CurrentHeight - y;
+			curves[curves.size() - 1].p4.x_1 = x;
+			curves[curves.size() - 1].p4.y_1 = CurrentHeight - y;
+		}
+	}
+	else if (system_state == CURVE_STATE5)
+	{
+		if (left_button_up == 1)
+		{
+			curves[curves.size() - 1].p3.x_1 = x;
+			curves[curves.size() - 1].p3.y_1 = CurrentHeight - y;
+			curves[curves.size() - 1].p4.x_1 = x;
+			curves[curves.size() - 1].p4.y_1 = CurrentHeight - y;
+		}
+	}
+	else if (system_state == CURVE_STATE7)
+	{
+		if (left_button_up == 1)
+		{
+			curves[curves.size() - 1].p4.x_1 = x;
+			curves[curves.size() - 1].p4.y_1 = CurrentHeight - y;
+		}
+	}
 	else if ((system_state == FILLEDAREA_STATE2) || (system_state == FILLEDAREA_STATE3))
 	{	//drag one end point of the line when drawing the filledArea
 		if (left_button_up == 1)
@@ -1996,6 +2416,11 @@ void myPassiveMotion(int x, int y)
 
 void processNormalKeys(unsigned char key, int x, int y) 
 {
+//	if (key == 'p')
+//	{
+//		glutInitDisplayMode(GLUT_RGB | GLUT_SINGLE);
+//		
+//	}
 	switch (system_state){
 	case LINE_STATE3:
 		if (key == 'a')
@@ -2527,6 +2952,9 @@ void mainMenuProc(int option) {
 	case FILLEDAREA:
 		system_state = FILLEDAREA_STATE1;
 		break;
+	case CURVE:
+		system_state = CURVE_STATE1;
+		break;
 	default: break;
 	}
 }
@@ -2540,6 +2968,7 @@ void createPopupMenus() {
 	glutAddMenuEntry("Draw ellipses", ELLIPSE);
 	glutAddMenuEntry("Draw polygons", POLYGON);
 	glutAddMenuEntry("Draw filledAreas", FILLEDAREA);
+	glutAddMenuEntry("Draw curves", CURVE);
 	/*
 	fillMenu = glutCreateMenu(processFillMenu);
 	glutAddMenuEntry("Fill", FILL);
@@ -2555,7 +2984,9 @@ int main(int argc, char **argv) {
 
 	// init GLUT and create window
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_RGB | GLUT_SINGLE);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+//	glutInitDisplayMode(GLUT_RGB | GLUT_SINGLE);
+	
 	glutInitWindowPosition(100, 100);
 	glutInitWindowSize(InitialWidth, InitialHeight);
 	glutCreateWindow("Computer Graphics Lab");
