@@ -8,8 +8,8 @@
 using namespace std;
 
 #define BMP_Header_Length 54
-#define InitialWidth 320
-#define InitialHeight 320
+#define InitialWidth glutGet(GLUT_SCREEN_WIDTH)
+#define InitialHeight glutGet(GLUT_SCREEN_HEIGHT)
 #define LINE 1
 #define LINE_STATE1 101
 #define LINE_STATE2 102
@@ -58,6 +58,8 @@ using namespace std;
 #define CURVE_STATE8 708
 #define CURVE_STATE9 709
 #define CURVE_STATE10 710
+#define CUBE 8
+#define CUBE_STATE1 801
 
 int system_state = 0;
 float CurrentWidth = InitialWidth;
@@ -78,6 +80,8 @@ int resizePolygon = 0;
 int resizeFilledArea = 0;
 int resizeCircle = 0;
 int resizeEllipse = 0;
+int resizeCurve = 0;
+float angle = 0;
 
 struct Line
 {
@@ -132,7 +136,6 @@ vector<Circle> circles;
 vector<vector<Line>> filledAreas;
 vector<Curve> curves;
 
-
 Line circleBounds[4] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };  //to surround the current circle
 Line ellipseBounds[4] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };  //to surround the current ellipse
 Line cutBounds[4] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } }; //the cutting window
@@ -175,6 +178,54 @@ static GLubyte BMP_Header[BMP_Header_Length] = {
 	0x30, //2  
 	0x75//3  
 };
+
+void rotate3D()
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glLoadIdentity();
+	glTranslatef(0.0f, 0.0f, -10.0f);
+	glRotatef(angle, -1.0f , 1.0f, 1.0f);
+	glBegin(GL_QUADS);
+	glColor3f(0.0f, 1.0f, 0.0f);
+	glVertex3f(1.0f , 1.0f, -1.0f);
+	glVertex3f(-1.0f , 1.0f, -1.0f);
+	glVertex3f(-1.0f , 1.0f, 1.0f);
+	glVertex3f(1.0f , 1.0f, 1.0f);
+	
+	glColor3f(1.0f, 0.5f, 0.0f);
+	glVertex3f(1.0f, -1.0f, 1.0f);
+	glVertex3f(-1.0f, -1.0f, 1.0f);
+	glVertex3f(-1.0f, -1.0f, -1.0f);
+	glVertex3f(1.0f, -1.0f, -1.0f);
+
+	glColor3f(1.0f, 0.0f, 0.0f);
+	glVertex3f(1.0f, 1.0f, 1.0f);
+	glVertex3f(-1.0f, 1.0f, 1.0f);
+	glVertex3f(-1.0f, -1.0f, 1.0f);
+	glVertex3f(1.0f, -1.0f, 1.0f);
+
+	glColor3f(1.0f, 1.0f, 0.0f);
+	glVertex3f(1.0f, -1.0f, -1.0f);
+	glVertex3f(-1.0f, -1.0f, -1.0f);
+	glVertex3f(-1.0f, 1.0f, -1.0f);
+	glVertex3f(1.0f, 1.0f, -1.0f);
+
+	glColor3f(0.0f, 0.0f, 1.0f);
+	glVertex3f(-1.0f, 1.0f, 1.0f);
+	glVertex3f(-1.0f, 1.0f, -1.0f);
+	glVertex3f(-1.0f, -1.0f, -1.0f);
+	glVertex3f(-1.0f, -1.0f, 1.0f);
+	
+	glColor3f(0.0f, 0.0f, 0.0f);
+	glVertex3f(1.0f, 1.0f, -1.0f);
+	glVertex3f(1.0f, 1.0f, 1.0f);
+	glVertex3f(1.0f, -1.0f, 1.0f);
+	glVertex3f(1.0f, -1.0f, -1.0f);
+	
+	glEnd();
+	angle -= 1.0f;
+	return;
+}
 
 void drawBezierCurve(Curve curve)
 {
@@ -352,7 +403,7 @@ void drawLines(int x_1, int y_1, int x_2, int y_2)
 		}
 	}
 	else if (abs(dx) < abs(dy))
-	{	//abs(dx) < abs(dy)
+	{	
 		if ((dx > 0) == (dy > 0))
 		{
 			int x_max, y_max, x_min, y_min;
@@ -362,9 +413,6 @@ void drawLines(int x_1, int y_1, int x_2, int y_2)
 				y_max = y_1;
 				x_min = x_2;
 				y_min = y_2;
-
-				cout << '(' << x_min << ',' << y_min << ") ,(" << x_max << ',' << y_max << ") = =" << endl;
-
 			}
 			else
 			{
@@ -790,7 +838,6 @@ void polygonCut()
 			lineTemp.x_2 = cweStop.x_1;
 			lineTemp.y_2 = cweStop.y_1;
 			lpii = !(isOutside(lineTemp, peStart));
-			cout << lpii << endl;
 
 			for (int j = 0; j < tempPolygon.size(); j++)
 			{
@@ -801,7 +848,6 @@ void polygonCut()
 				lineTemp.y_1 = cweStart.y_1;
 				lineTemp.x_2 = cweStop.x_1;
 				lineTemp.y_2 = cweStop.y_1;
-				cout << !(isOutside(lineTemp, peStop)) << endl;
 				if (!(isOutside(lineTemp, peStop)))
 				{
 					if (!lpii)
@@ -906,118 +952,141 @@ void InitEnvironment()
 
 	glViewport(0, 0, glutGet(GLUT_SCREEN_WIDTH) * 2, glutGet(GLUT_SCREEN_HEIGHT) * 2);
 	gluOrtho2D(0, glutGet(GLUT_SCREEN_WIDTH) * 2, 0, glutGet(GLUT_SCREEN_HEIGHT) * 2);
-//	gluPerspective(45.0f, (GLfloat)glutGet(GLUT_SCREEN_WIDTH)  / (GLfloat)glutGet(GLUT_SCREEN_HEIGHT) , 0.1f, 100.0f);
 
 	glMatrixMode(GL_MODELVIEW);
+
+	//ADD
+	glShadeModel(GL_SMOOTH);
+	glEnable(GL_DEPTH_TEST);  
 }
 
 void changeSize(int w, int h) {
+	if (system_state == CUBE_STATE1)
+	{
+		glViewport(0, 0, glutGet(GLUT_SCREEN_WIDTH), glutGet(GLUT_SCREEN_HEIGHT));
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		gluPerspective(60.0f, glutGet(GLUT_SCREEN_WIDTH) / glutGet(GLUT_SCREEN_HEIGHT), 0.1f, 100.0f);
 
-	CurrentWidth = w;
-	CurrentHeight = h;
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		glTranslatef(0.0f, 0.0f, -10.0f);
+	}
+	else
+	{
+		CurrentWidth = w;
+		CurrentHeight = h;
 
-	// Use the Projection Matrix
-	glMatrixMode(GL_PROJECTION);
+		// Use the Projection Matrix
+		glMatrixMode(GL_PROJECTION);
 
-	// Reset Matrix
-	glLoadIdentity();
+		// Reset Matrix
+		glLoadIdentity();
 
-	glViewport(0, 0, glutGet(GLUT_SCREEN_WIDTH) * 2, glutGet(GLUT_SCREEN_HEIGHT) * 2);
+		glViewport(0, 0, glutGet(GLUT_SCREEN_WIDTH) * 2, glutGet(GLUT_SCREEN_HEIGHT) * 2);
 
-	gluOrtho2D(0, glutGet(GLUT_SCREEN_WIDTH) * 2, 0, glutGet(GLUT_SCREEN_HEIGHT) * 2);
+		gluOrtho2D(0, glutGet(GLUT_SCREEN_WIDTH) * 2, 0, glutGet(GLUT_SCREEN_HEIGHT) * 2);
 
-	// Get Back to the Modelview
-	glMatrixMode(GL_MODELVIEW);
+		// Get Back to the Modelview
+		glMatrixMode(GL_MODELVIEW);
+	}
+		
 }
 
 void renderScene(void) {
 	glClearColor(1, 1, 1, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	//draw lines
-	for (int i = 0; i < lines.size(); i++)
-	{
-		cout << '(' << lines[i].x_1 << ',' << lines[i].y_1 << ") ,(" << lines[i].x_2 << ',' << lines[i].y_2 << ')' << endl;
-		drawLines(lines[i].x_1, lines[i].y_1, lines[i].x_2, lines[i].y_2);
+	if (system_state == CUBE_STATE1){
+		rotate3D();
 	}
-
-	//draw polygons
-	for (int i = 0; i < polygons.size(); i++)
+	else
 	{
-		for (int j = 0; j < polygons[i].size(); j++)
+		glLoadIdentity();
+		//draw lines
+		for (int i = 0; i < lines.size(); i++)
 		{
-			drawLines(polygons[i][j].x_1, polygons[i][j].y_1, polygons[i][j].x_2, polygons[i][j].y_2);
-		}
-	}
-
-	//draw curves
-	for (int i = 0; i < curves.size(); i++)
-	{
-		if (i == curves.size() - 1 && ((system_state / 100) == 7) && (system_state != CURVE_STATE1))
-		{
-			drawLines(curves[i].p1.x_1, curves[i].p1.y_1, curves[i].p2.x_1, curves[i].p2.y_1);
-			drawLines(curves[i].p2.x_1, curves[i].p2.y_1, curves[i].p3.x_1, curves[i].p3.y_1);
-			drawLines(curves[i].p3.x_1, curves[i].p3.y_1, curves[i].p4.x_1, curves[i].p4.y_1);
-		}
-		if(i != curves.size() - 1 || ((i == curves.size() - 1) && (isCurveDraw == 0)))
-		{
-			drawBezierCurve(curves[i]);
-		}
-	}
-
-	//draw filledAreas
-	for (int i = 0; i < filledAreas.size(); i++)
-	{
-		for (int j = 0; j < filledAreas[i].size(); j++)
-		{
-			drawLines(filledAreas[i][j].x_1, filledAreas[i][j].y_1, filledAreas[i][j].x_2, filledAreas[i][j].y_2);
+			drawLines(lines[i].x_1, lines[i].y_1, lines[i].x_2, lines[i].y_2);
 		}
 
-		if ((i != filledAreas.size() - 1) || (isFilledAreaEdit == 1) || (isFilledAreaEnd == 1))
+		//draw polygons
+		for (int i = 0; i < polygons.size(); i++)
 		{
-			fillArea(filledAreas[i]);
+			for (int j = 0; j < polygons[i].size(); j++)
+			{
+				drawLines(polygons[i][j].x_1, polygons[i][j].y_1, polygons[i][j].x_2, polygons[i][j].y_2);
+			}
 		}
-	}
 
-	//draw circleBounds
-	if (isCircleEdit && ((system_state / 100) == 2) && (system_state != CIRCLE_STATE1))
-	{
-		for (int i = 0; i < 4; i++)
+		//draw curves
+		for (int i = 0; i < curves.size(); i++)
 		{
-			drawLines(circleBounds[i].x_1, circleBounds[i].y_1, circleBounds[i].x_2, circleBounds[i].y_2);
+			if (i == curves.size() - 1 && ((system_state / 100) == 7) && (system_state != CURVE_STATE1))
+			{
+				drawLines(curves[i].p1.x_1, curves[i].p1.y_1, curves[i].p2.x_1, curves[i].p2.y_1);
+				drawLines(curves[i].p2.x_1, curves[i].p2.y_1, curves[i].p3.x_1, curves[i].p3.y_1);
+				drawLines(curves[i].p3.x_1, curves[i].p3.y_1, curves[i].p4.x_1, curves[i].p4.y_1);
+			}
+			if (i != curves.size() - 1 || ((i == curves.size() - 1) && (isCurveDraw == 0)))
+			{
+				drawBezierCurve(curves[i]);
+			}
 		}
-	}
 
-	//draw circles
-	for (int i = 0; i < circles.size(); i++)
-	{
-		drawCircles(circles[i]);
-	}
-
-	//draw ellipseBounds
-	if (isEllipseEdit && ((system_state / 100) == 4) && (system_state != ELLIPSE_STATE1))
-	{
-		for (int i = 0; i < 4; i++)
+		//draw filledAreas
+		for (int i = 0; i < filledAreas.size(); i++)
 		{
-			drawLines(ellipseBounds[i].x_1, ellipseBounds[i].y_1, ellipseBounds[i].x_2, ellipseBounds[i].y_2);
-		}
-	}
-	
-	//draw ellipses
-	for (int i = 0; i < ellipses.size(); i++)
-	{
-		drawEllipse(ellipses[i]);
-	}
+			for (int j = 0; j < filledAreas[i].size(); j++)
+			{
+				drawLines(filledAreas[i][j].x_1, filledAreas[i][j].y_1, filledAreas[i][j].x_2, filledAreas[i][j].y_2);
+			}
 
-	//draw cutBounds
-	if (((system_state / 100) == 6) && (system_state != POLYGON_STATE_CUT1))
-	{
-		for (int i = 0; i < 4; i++)
-		{
-			drawLines(cutBounds[i].x_1, cutBounds[i].y_1, cutBounds[i].x_2, cutBounds[i].y_2);
+			if ((i != filledAreas.size() - 1) || (isFilledAreaEdit == 1) || (isFilledAreaEnd == 1))
+			{
+				fillArea(filledAreas[i]);
+			}
 		}
+
+		//draw circleBounds
+		if (isCircleEdit && ((system_state / 100) == 2) && (system_state != CIRCLE_STATE1))
+		{
+			for (int i = 0; i < 4; i++)
+			{
+				drawLines(circleBounds[i].x_1, circleBounds[i].y_1, circleBounds[i].x_2, circleBounds[i].y_2);
+			}
+		}
+
+		//draw circles
+		for (int i = 0; i < circles.size(); i++)
+		{
+			drawCircles(circles[i]);
+		}
+
+		//draw ellipseBounds
+		if (isEllipseEdit && ((system_state / 100) == 4) && (system_state != ELLIPSE_STATE1))
+		{
+			for (int i = 0; i < 4; i++)
+			{
+				drawLines(ellipseBounds[i].x_1, ellipseBounds[i].y_1, ellipseBounds[i].x_2, ellipseBounds[i].y_2);
+			}
+		}
+
+		//draw ellipses
+		for (int i = 0; i < ellipses.size(); i++)
+		{
+			drawEllipse(ellipses[i]);
+		}
+
+		//draw cutBounds
+		if (((system_state / 100) == 6) && (system_state != POLYGON_STATE_CUT1))
+		{
+			for (int i = 0; i < 4; i++)
+			{
+				drawLines(cutBounds[i].x_1, cutBounds[i].y_1, cutBounds[i].x_2, cutBounds[i].y_2);
+			}
+		}
+
 	}
-		
 	//	glFlush();
 	glutSwapBuffers();
 	grab();
@@ -1122,8 +1191,10 @@ void mouseButton(int button, int state, int x, int y)
 			if (state == GLUT_DOWN)
 			{
 				isCurveDraw = 1;
+				edit_curve_point = -1;
 				system_state = CURVE_STATE2;
 				left_button_down = 1;
+				
 
 				Curve newCurve;
 				newCurve.p1.x_1 = x;
@@ -2416,11 +2487,6 @@ void myPassiveMotion(int x, int y)
 
 void processNormalKeys(unsigned char key, int x, int y) 
 {
-//	if (key == 'p')
-//	{
-//		glutInitDisplayMode(GLUT_RGB | GLUT_SINGLE);
-//		
-//	}
 	switch (system_state){
 	case LINE_STATE3:
 		if (key == 'a')
@@ -2491,7 +2557,7 @@ void processNormalKeys(unsigned char key, int x, int y)
 			polygonCut();
 			resizePolygon = 0;
 			edit_polygon_point = -1;
-			system_state = POLYGON_STATE1;
+			system_state = POLYGON_STATE5;
 		}
 		break;
 	case POLYGON_STATE5:
@@ -2930,6 +2996,83 @@ void processNormalKeys(unsigned char key, int x, int y)
 			}
 		}
 		break;
+	case CURVE_STATE9:
+		if (key == 'a')
+		{
+				curves[curves.size() - 1].p1.x_1 -= 1;
+				curves[curves.size() - 1].p2.x_1 -= 1;
+				curves[curves.size() - 1].p3.x_1 -= 1;
+				curves[curves.size() - 1].p4.x_1 -= 1;
+		}
+		else if (key == 'd')
+		{
+			curves[curves.size() - 1].p1.x_1 += 1;
+			curves[curves.size() - 1].p2.x_1 += 1;
+			curves[curves.size() - 1].p3.x_1 += 1;
+			curves[curves.size() - 1].p4.x_1 += 1;
+		}
+		else if (key == 'w')
+		{
+			curves[curves.size() - 1].p1.y_1 += 1;
+			curves[curves.size() - 1].p2.y_1 += 1;
+			curves[curves.size() - 1].p3.y_1 += 1;
+			curves[curves.size() - 1].p4.y_1 += 1;
+		}
+		else if (key == 's')
+		{
+			curves[curves.size() - 1].p1.y_1 -= 1;
+			curves[curves.size() - 1].p2.y_1 -= 1;
+			curves[curves.size() - 1].p3.y_1 -= 1;
+			curves[curves.size() - 1].p4.y_1 -= 1;
+		}
+		else if (key == 'q')
+		{
+			Curve temp = curves[curves.size() - 1];
+			int x0 = curves[curves.size() - 1].p1.x_1;
+			int y0 = curves[curves.size() - 1].p1.y_1;
+			curves[curves.size() - 1].p1.x_1 = (temp.p1.x_1 - x0) * 0 - (temp.p1.y_1 - y0) * 1 + x0;
+			curves[curves.size() - 1].p1.y_1 = (temp.p1.x_1 - x0) * 1 - (temp.p1.y_1 - y0) * 0 + y0;
+			curves[curves.size() - 1].p2.x_1 = (temp.p2.x_1 - x0) * 0 - (temp.p2.y_1 - y0) * 1 + x0;
+			curves[curves.size() - 1].p2.y_1 = (temp.p2.x_1 - x0) * 1 - (temp.p2.y_1 - y0) * 0 + y0;
+			curves[curves.size() - 1].p3.x_1 = (temp.p3.x_1 - x0) * 0 - (temp.p3.y_1 - y0) * 1 + x0;
+			curves[curves.size() - 1].p3.y_1 = (temp.p3.x_1 - x0) * 1 - (temp.p3.y_1 - y0) * 0 + y0;
+			curves[curves.size() - 1].p4.x_1 = (temp.p4.x_1 - x0) * 0 - (temp.p4.y_1 - y0) * 1 + x0;
+			curves[curves.size() - 1].p4.y_1 = (temp.p4.x_1 - x0) * 1 - (temp.p4.y_1 - y0) * 0 + y0;
+		}
+		else if (key == 'e')
+		{
+			Curve temp = curves[curves.size() - 1];
+			int x0 = curves[curves.size() - 1].p1.x_1;
+			int y0 = curves[curves.size() - 1].p1.y_1;
+			curves[curves.size() - 1].p1.x_1 = (temp.p1.x_1 - x0) * 0 - (temp.p1.y_1 - y0) * (-1) + x0;
+			curves[curves.size() - 1].p1.y_1 = (temp.p1.x_1 - x0) * (-1) - (temp.p1.y_1 - y0) * 0 + y0;
+			curves[curves.size() - 1].p2.x_1 = (temp.p2.x_1 - x0) * 0 - (temp.p2.y_1 - y0) * (-1) + x0;
+			curves[curves.size() - 1].p2.y_1 = (temp.p2.x_1 - x0) * (-1) - (temp.p2.y_1 - y0) * 0 + y0;
+			curves[curves.size() - 1].p3.x_1 = (temp.p3.x_1 - x0) * 0 - (temp.p3.y_1 - y0) * (-1) + x0;
+			curves[curves.size() - 1].p3.y_1 = (temp.p3.x_1 - x0) * (-1) - (temp.p3.y_1 - y0) * 0 + y0;
+			curves[curves.size() - 1].p4.x_1 = (temp.p4.x_1 - x0) * 0 - (temp.p4.y_1 - y0) * (-1) + x0;
+			curves[curves.size() - 1].p4.y_1 = (temp.p4.x_1 - x0) * (-1) - (temp.p4.y_1 - y0) * 0 + y0;
+		}
+		else if (key == 'z')
+		{
+			if (resizeCurve > 0)
+			{
+					curves[curves.size() - 1].p1.x_1 = curves[curves.size() - 1].p1.x_1 / 2;
+					curves[curves.size() - 1].p2.x_1 = curves[curves.size() - 1].p2.x_1 / 2; 
+					curves[curves.size() - 1].p3.x_1 = curves[curves.size() - 1].p3.x_1 / 2; 
+					curves[curves.size() - 1].p4.x_1 = curves[curves.size() - 1].p4.x_1 / 2; 
+					resizeCurve--;
+			}
+		}
+		else if (key == 'x')
+		{
+			curves[curves.size() - 1].p1.x_1 = curves[curves.size() - 1].p1.x_1 * 2;
+			curves[curves.size() - 1].p2.x_1 = curves[curves.size() - 1].p2.x_1 * 2;
+			curves[curves.size() - 1].p3.x_1 = curves[curves.size() - 1].p3.x_1 * 2;
+			curves[curves.size() - 1].p4.x_1 = curves[curves.size() - 1].p4.x_1 * 2;
+			resizeCurve++;
+		}
+		break;
 	default: break;
 	}
 	glutPostRedisplay();
@@ -2955,8 +3098,13 @@ void mainMenuProc(int option) {
 	case CURVE:
 		system_state = CURVE_STATE1;
 		break;
+	case CUBE:
+		system_state = CUBE_STATE1;
+		break;
 	default: break;
 	}
+	glutPostRedisplay();
+	changeSize(CurrentWidth, CurrentHeight);
 }
 
 void createPopupMenus() {
@@ -2969,6 +3117,7 @@ void createPopupMenus() {
 	glutAddMenuEntry("Draw polygons", POLYGON);
 	glutAddMenuEntry("Draw filledAreas", FILLEDAREA);
 	glutAddMenuEntry("Draw curves", CURVE);
+	glutAddMenuEntry("Show Cube", CUBE);
 	/*
 	fillMenu = glutCreateMenu(processFillMenu);
 	glutAddMenuEntry("Fill", FILL);
@@ -2985,10 +3134,9 @@ int main(int argc, char **argv) {
 	// init GLUT and create window
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-//	glutInitDisplayMode(GLUT_RGB | GLUT_SINGLE);
 	
 	glutInitWindowPosition(100, 100);
-	glutInitWindowSize(InitialWidth, InitialHeight);
+	glutInitWindowSize(InitialWidth - 150, InitialHeight -150);
 	glutCreateWindow("Computer Graphics Lab");
 
 	InitEnvironment();
@@ -3000,6 +3148,7 @@ int main(int argc, char **argv) {
 	glutMotionFunc(myMotion);
 	glutPassiveMotionFunc(myPassiveMotion);
 	glutKeyboardFunc(processNormalKeys);
+	glutIdleFunc(renderScene);
 
 	// init Menus
 	createPopupMenus();
